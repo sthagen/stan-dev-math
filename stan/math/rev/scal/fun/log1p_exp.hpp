@@ -3,24 +3,21 @@
 
 #include <stan/math/rev/core.hpp>
 #include <stan/math/prim/scal/fun/log1p_exp.hpp>
-#include <stan/math/rev/scal/fun/calculate_chain.hpp>
+#include <stan/math/prim/scal/meta/operands_and_partials.hpp>
 
 namespace stan {
 namespace math {
-
-namespace {
-class log1p_exp_v_vari : public op_v_vari {
- public:
-  explicit log1p_exp_v_vari(vari* avi) : op_v_vari(log1p_exp(avi->val_), avi) {}
-  void chain() { avi_->adj_ += adj_ * calculate_chain(avi_->val_, val_); }
-};
-}  // namespace
 
 /**
  * Return the log of 1 plus the exponential of the specified
  * variable.
  */
-inline var log1p_exp(const var& a) { return var(new log1p_exp_v_vari(a.vi_)); }
+inline var log1p_exp(const var& a) {
+  operands_and_partials<var> res(a);
+  double f = log1p_exp(a.vi_->val_);
+  res.edge1_.partial_ = std::exp(a.vi_->val_ - f);
+  return res.build(f);
+}
 
 }  // namespace math
 }  // namespace stan
