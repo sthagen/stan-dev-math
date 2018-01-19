@@ -28,17 +28,17 @@ class ops_partials_edge<double, std::vector<var> > {
   friend class stan::math::operands_and_partials;
   const Op& operands_;
 
-  void dump_partials(double* partials) {
+  void dump_partials(double* partials) const {
     for (int i = 0; i < this->partials_.size(); ++i) {
       partials[i] = this->partials_[i];
     }
   }
-  void dump_operands(vari** varis) {
+  void dump_operands(vari** varis) const {
     for (size_t i = 0; i < this->operands_.size(); ++i) {
       varis[i] = this->operands_[i].vi_;
     }
   }
-  int size() { return this->operands_.size(); }
+  int size() const { return this->operands_.size(); }
 };
 
 template <int R, int C>
@@ -58,17 +58,17 @@ class ops_partials_edge<double, Eigen::Matrix<var, R, C> > {
   friend class stan::math::operands_and_partials;
   const Op& operands_;
 
-  void dump_operands(vari** varis) {
+  void dump_operands(vari** varis) const {
     for (int i = 0; i < this->operands_.size(); ++i) {
       varis[i] = this->operands_(i).vi_;
     }
   }
-  void dump_partials(double* partials) {
+  void dump_partials(double* partials) const {
     for (int i = 0; i < this->partials_.size(); ++i) {
       partials[i] = this->partials_(i);
     }
   }
-  int size() { return this->operands_.size(); }
+  int size() const { return this->operands_.size(); }
 };
 
 // SPECIALIZATIONS FOR MULTIVARIATE VECTORIZATIONS
@@ -91,7 +91,7 @@ class ops_partials_edge<double, std::vector<Eigen::Matrix<var, R, C> > > {
   friend class stan::math::operands_and_partials;
   const Op& operands_;
 
-  void dump_partials(double* partials) {
+  void dump_partials(double* partials) const {
     int p_i = 0;
     for (size_t i = 0; i < this->partials_vec_.size(); ++i) {
       for (int j = 0; j < this->partials_vec_[i].size(); ++j, ++p_i) {
@@ -99,7 +99,7 @@ class ops_partials_edge<double, std::vector<Eigen::Matrix<var, R, C> > > {
       }
     }
   }
-  void dump_operands(vari** varis) {
+  void dump_operands(vari** varis) const {
     int p_i = 0;
     for (size_t i = 0; i < this->operands_.size(); ++i) {
       for (int j = 0; j < this->operands_[i].size(); ++j, ++p_i) {
@@ -107,7 +107,7 @@ class ops_partials_edge<double, std::vector<Eigen::Matrix<var, R, C> > > {
       }
     }
   }
-  int size() {
+  int size() const {
     if (unlikely(this->operands_.size() == 0))
       return 0;
     return this->operands_.size() * this->operands_[0].size();

@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_REV_SCAL_META_OPERANDS_AND_PARTIALS_HPP
 #define STAN_MATH_REV_SCAL_META_OPERANDS_AND_PARTIALS_HPP
 
+#include <stan/math/prim/scal/meta/is_constant_struct.hpp>
 #include <stan/math/rev/core/chainablestack.hpp>
 #include <stan/math/rev/core/precomputed_gradients.hpp>
 #include <stan/math/rev/core/var.hpp>
@@ -23,10 +24,12 @@ class ops_partials_edge<double, var> {
  private:
   template <typename, typename, typename, typename, typename, typename>
   friend class stan::math::operands_and_partials;
+  template <typename, typename, typename>
+  friend class stan::math::operands_and_partials_2;
   const var& operand_;
 
-  void dump_partials(double* partials) { *partials = this->partial_; }
-  void dump_operands(vari** varis) { *varis = this->operand_.vi_; }
+  void dump_partials(double* partials) const { *partials = this->partial_; }
+  void dump_operands(vari** varis) const { *varis = this->operand_.vi_; }
   int size() const { return 1; }
 };
 }  // namespace internal
@@ -91,9 +94,9 @@ class operands_and_partials<Op1, Op2, Op3, Op4, Op5, var> {
    * @param value the return value of the function we are compressing
    * @return the node to be stored in the expression graph for autodiff
    */
-  var build(double value) {
-    size_t size = edge1_.size() + edge2_.size() + edge3_.size() + edge4_.size()
-                  + edge5_.size();
+  var build(double value) const {
+    const size_t size = edge1_.size() + edge2_.size() + edge3_.size()
+                        + edge4_.size() + edge5_.size();
     vari** varis = ChainableStack::memalloc_.alloc_array<vari*>(size);
     double* partials = ChainableStack::memalloc_.alloc_array<double>(size);
     int idx = 0;
@@ -107,6 +110,46 @@ class operands_and_partials<Op1, Op2, Op3, Op4, Op5, var> {
     edge4_.dump_partials(&partials[idx]);
     edge5_.dump_operands(&varis[idx += edge4_.size()]);
     edge5_.dump_partials(&partials[idx]);
+
+    return var(new precomputed_gradients_vari(value, size, varis, partials));
+  }
+};
+template <typename Op1, typename Op2>
+class operands_and_partials_2<Op1, Op2, var> {
+ public:
+  internal::ops_partials_edge<double, Op1> edge1_;
+  internal::ops_partials_edge<double, Op2> edge2_;
+
+  explicit operands_and_partials_2(const Op1& o1) : edge1_(o1) {}
+  operands_and_partials_2(const Op1& o1, const Op2& o2)
+      : edge1_(o1), edge2_(o2) {}
+
+  /**
+   * Build the node to be stored on the autodiff graph.
+   * This should contain both the value and the tangent.
+   *
+   * For scalars, we don't calculate any tangents.
+   * For reverse mode, we end up returning a type of var that will calculate
+   * the appropriate adjoint using the stored operands and partials.
+   * Forward mode just calculates the tangent on the spot and returns it in
+   * a vanilla fvar.
+   *
+   * @param value the return value of the function we are compressing
+   * @return the node to be stored in the expression graph for autodiff
+   */
+  var build(double value) const {
+    const size_t size = edge1_.size() + edge2_.size();
+    vari** varis = ChainableStack::memalloc_.alloc_array<vari*>(size);
+    double* partials = ChainableStack::memalloc_.alloc_array<double>(size);
+    int idx = 0;
+    if (!is_constant_struct<Op1>::value) {
+      edge1_.dump_operands(&varis[idx]);
+      edge1_.dump_partials(&partials[idx]);
+    }
+    if (!is_constant_struct<Op2>::value) {
+      edge2_.dump_operands(&varis[idx += edge1_.size()]);
+      edge2_.dump_partials(&partials[idx]);
+    }
 
     return var(new precomputed_gradients_vari(value, size, varis, partials));
   }

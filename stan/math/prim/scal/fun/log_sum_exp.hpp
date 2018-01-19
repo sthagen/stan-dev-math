@@ -55,13 +55,14 @@ inline typename return_type<T1, T2>::type log_sum_exp(const T1& a,
 
   using std::exp;
 
-  T_partials_return a_dbl = value_of(a);
-  T_partials_return b_dbl = value_of(b);
+  const T_partials_return a_dbl = value_of(a);
+  const T_partials_return b_dbl = value_of(b);
 
-  T_partials_return fab = a_dbl > b_dbl ? a_dbl + log1p_exp(b_dbl - a_dbl)
-                                        : b_dbl + log1p_exp(a_dbl - b_dbl);
+  const T_partials_return fab = a_dbl > b_dbl
+                                    ? a_dbl + log1p_exp(b_dbl - a_dbl)
+                                    : b_dbl + log1p_exp(a_dbl - b_dbl);
 
-  operands_and_partials<T1, T2> ops_partials(a, b);
+  operands_and_partials_2<T1, T2> ops_partials(a, b);
 
   if (!is_constant_struct<T1>::value)
     ops_partials.edge1_.partials_[0] = exp(a_dbl - fab);

@@ -12,6 +12,10 @@ template <typename Op1 = double, typename Op2 = double, typename Op3 = double,
               typename return_type<Op1, Op2, Op3, Op4, Op5>::type>
 class operands_and_partials;  // Forward declaration
 
+template <typename Op1 = double, typename Op2 = double,
+          typename T_return_type = typename return_type<Op1, Op2>::type>
+class operands_and_partials_2;  // Forward declaration
+
 namespace internal {
 /**
  * An edge holds both the operands and its associated
@@ -36,6 +40,8 @@ class ops_partials_edge {
  private:
   template <typename, typename, typename, typename, typename, typename>
   friend class stan::math::operands_and_partials;
+  template <typename, typename, typename>
+  friend class stan::math::operands_and_partials_2;
 
   void dump_partials(ViewElt* /* partials */) const {}  // reverse mode
   void dump_operands(void* /* operands */) const {}     // reverse mode
@@ -103,7 +109,7 @@ class operands_and_partials {
    * @param value the return value of the function we are compressing
    * @return the value with its derivative
    */
-  T_return_type build(double value) { return value; }
+  T_return_type build(double value) const { return value; }
 
   // These will always be 0 size base template instantiations (above).
   internal::ops_partials_edge<double, Op1> edge1_;
@@ -111,6 +117,31 @@ class operands_and_partials {
   internal::ops_partials_edge<double, Op3> edge3_;
   internal::ops_partials_edge<double, Op4> edge4_;
   internal::ops_partials_edge<double, Op5> edge5_;
+};
+template <typename Op1, typename Op2, typename T_return_type>
+class operands_and_partials_2 {
+ public:
+  explicit operands_and_partials_2(const Op1& op1) {}
+  operands_and_partials_2(const Op1& op1, const Op2& op2) {}
+
+  /**
+   * Build the node to be stored on the autodiff graph.
+   * This should contain both the value and the tangent.
+   *
+   * For scalars (this implementation), we don't calculate any derivatives.
+   * For reverse mode, we end up returning a type of var that will calculate
+   * the appropriate adjoint using the stored operands and partials.
+   * Forward mode just calculates the tangent on the spot and returns it in
+   * a vanilla fvar.
+   *
+   * @param value the return value of the function we are compressing
+   * @return the value with its derivative
+   */
+  T_return_type build(double value) const { return value; }
+
+  // These will always be 0 size base template instantiations (above).
+  internal::ops_partials_edge<double, Op1> edge1_;
+  internal::ops_partials_edge<double, Op2> edge2_;
 };
 }  // namespace math
 }  // namespace stan
