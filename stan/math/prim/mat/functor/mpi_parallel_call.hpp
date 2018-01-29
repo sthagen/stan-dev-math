@@ -1,15 +1,13 @@
 #ifndef STAN_MATH_PRIM_MAT_FUNCTOR_MPI_PARALLEL_CALL_HPP
 #define STAN_MATH_PRIM_MAT_FUNCTOR_MPI_PARALLEL_CALL_HPP
 
+#include <stan/math/prim/arr/functor/mpi_cluster.hpp>
+#include <stan/math/prim/arr/functor/mpi_distributed_apply.hpp>
+#include <stan/math/prim/mat/fun/to_array_1d.hpp>
+#include <stan/math/prim/mat/fun/dims.hpp>
+
 #include <vector>
 #include <type_traits>
-
-#include <boost/mpi.hpp>
-
-#include <stan/math/prim/mat/fun/to_array_1d.hpp>
-#include <stan/math/prim/arr/functor/mpi_distributed_apply.hpp>
-#include <stan/math/prim/arr/functor/mpi_cluster.hpp>
-#include <stan/math/prim/mat/fun/dims.hpp>
 
 namespace stan {
 namespace math {
@@ -193,7 +191,7 @@ class mpi_parallel_call {
       for (std::size_t i = 0; i < num_local_jobs; ++i) {
         const matrix_d job_output
             = ReduceF()(local_shared_params_dbl_, local_job_params_dbl_.col(i),
-                        local_x_r[i], local_x_i[i]);
+                        local_x_r[i], local_x_i[i], 0);
         local_f_out[i] = job_output.cols();
 
         if (unlikely(num_outputs_per_job_ == 0)) {
@@ -248,7 +246,7 @@ class mpi_parallel_call {
       if (!all_ok) {
         // err out on the root
         if (rank_ == 0)
-          throw std::runtime_error("MPI error on first evaluation.");
+          throw std::domain_error("MPI error on first evaluation.");
         // and ensure on the workers that they return into their
         // listening state
         return result_type();
