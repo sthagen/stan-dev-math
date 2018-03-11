@@ -16,7 +16,7 @@ class map_rect_reduce<F, double, double> {
                       const std::vector<double>& x_r,
                       const std::vector<int>& x_i,
                       std::ostream* msgs = 0) const {
-    const F f;
+    F f;
     const matrix_d out
         = f(shared_params, job_specific_params, x_r, x_i, msgs).transpose();
     return out;

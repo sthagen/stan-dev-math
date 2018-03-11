@@ -34,7 +34,7 @@ struct map_rect_reduce<F, var, var> {
       for (size_type i = 0; i < num_job_specific_params; ++i)
         z_vars[num_shared_params + i] = job_specific_params_v(i);
 
-      const F f;
+      F f;
       vector_v fx_v = f(shared_params_v, job_specific_params_v, x_r, x_i, msgs);
 
       const size_t size_f = fx_v.rows();
@@ -74,7 +74,7 @@ struct map_rect_reduce<F, double, var> {
       for (std::size_t i = 0; i < num_job_specific_params; ++i)
         job_specific_params_v(i) = job_specific_params(i);
 
-      const F f;
+      F f;
       vector_v fx_v = f(shared_params, job_specific_params_v, x_r, x_i, msgs);
 
       const size_t size_f = fx_v.rows();
@@ -114,7 +114,7 @@ struct map_rect_reduce<F, var, double> {
       for (std::size_t i = 0; i < num_shared_params; ++i)
         shared_params_v(i) = shared_params(i);
 
-      const F f;
+      F f;
       vector_v fx_v = f(shared_params_v, job_specific_params, x_r, x_i, 0);
 
       const size_t size_f = fx_v.rows();
