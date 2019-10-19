@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_PRIM_SCAL_ERR_CHECK_2F1_CONVERGES_HPP
 #define STAN_MATH_PRIM_SCAL_ERR_CHECK_2F1_CONVERGES_HPP
 
+#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/scal/err/check_not_nan.hpp>
 #include <stan/math/prim/scal/fun/is_nonpositive_integer.hpp>
 #include <stan/math/prim/scal/fun/value_of_rec.hpp>
@@ -16,19 +17,16 @@ namespace math {
  * Check if the hypergeometric function (2F1) called with
  * supplied arguments will converge, assuming arguments are
  * finite values.
- *
  * @tparam T_a1 Type of a1
  * @tparam T_a2 Type of a2
  * @tparam T_b1 Type of b1
  * @tparam T_z Type of z
- *
  * @param function Name of function ultimately relying on 2F1 (for error
  *   messages)
  * @param a1 Variable to check
  * @param a2 Variable to check
  * @param b1 Variable to check
  * @param z Variable to check
- *
  * @throw <code>domain_error</code> if 2F1(a1, a2, b1, z)
  *   does not meet convergence conditions, or if any coefficient is NaN.
  */
@@ -58,8 +56,9 @@ inline void check_2F1_converges(const char* function, const T_a1& a1,
   bool is_undefined = is_nonpositive_integer(b1) && fabs(b1) <= num_terms;
 
   if (!is_undefined
-      && (is_polynomial || fabs(z) < 1 || (fabs(z) == 1 && b1 > a1 + a2)))
+      && (is_polynomial || fabs(z) < 1 || (fabs(z) == 1 && b1 > a1 + a2))) {
     return;
+  }
 
   std::stringstream msg;
   msg << "called from function '" << function << "', "

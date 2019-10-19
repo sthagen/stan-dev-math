@@ -1,75 +1,35 @@
-# Makefile for Stan.
 ##
+# Stan Math Library
+# -----------------
+#
+# To customize your build, set make variables in either:
+#    ~/.config/stan/make.local
+#    make/local
+# Variables in make/local is loaded after ~/.config/stan/make.local
 
-# The default target of this Makefile is...
+
+## 'help' is the default make target.
 help:
 
-## Disable implicit rules.
-SUFIXES:
+-include $(HOME)/.config/stan/make.local  # user-defined variables
+-include make/local                       # user-defined variables
 
-include make/default_compiler_options
-
-##
-# Library locations
-##
-MATH ?=
+include make/compiler_flags               # CXX, CXXFLAGS, LDFLAGS set by the end of this file
+include make/dependencies                 # rules for generating dependencies
 include make/libraries
-
--include $(HOME)/.config/stan/make.local  # define local variables
--include make/local                       # overwrite local variables
-
-CXX = $(CC)
-
-##
-# Get information about the compiler used.
-# - CC_TYPE: {g++, clang++, mingw32-g++, other}
-# - CC_MAJOR: major version of CC
-# - CC_MINOR: minor version of CC
-##
--include make/detect_cc
-
-# OS_TYPE is set automatically by this script
-##
-# These includes should update the following variables
-# based on the OS:
-#   - CFLAGS
-#   - GTEST_CXXFLAGS
-#   - EXE
-##
--include make/detect_os
-
-include make/tests    # tests
-include make/cpplint  # cpplint
-
-##
-# Dependencies
-##
-ifneq (,$(filter-out test-headers generate-tests clean% %-test %.d,$(MAKECMDGOALS)))
-  -include $(addsuffix .d,$(subst $(EXE),,$(MAKECMDGOALS)))
-endif
-
+include make/tests
+include make/cpplint
+include make/clang-tidy
 
 .PHONY: help
 help:
 	@echo '--------------------------------------------------------------------------------'
+	@echo 'Note: testing of Math is typically done with the `runTests.py` python script.'
+	@echo '  See https://github.com/stan-dev/math/wiki/Developer-Doc#building-and-running-tests'
+	@echo '  for more detail on testing.'
+	@echo  ''
 	@echo 'Stan Math makefile:'
-	@echo '  Current configuration:'
-	@echo '  - OS_TYPE (Operating System): ' $(OS_TYPE)
-	@echo '  - CC (Compiler):              ' $(CC)
-	@echo '  - CC_TYPE                     ' $(CC_TYPE)
-	@echo '  - Compiler version:           ' $(CC_MAJOR).$(CC_MINOR)
-	@echo '  - O (Optimization Level):     ' $(O)
-	@echo '  - O_STANC (Opt for stanc):    ' $(O_STANC)
-ifdef TEMPLATE_DEPTH
-	@echo '  - TEMPLATE_DEPTH:             ' $(TEMPLATE_DEPTH)
-endif
-	@echo '  Library configuration:'
-	@echo '  - EIGEN                       ' $(EIGEN)
-	@echo '  - BOOST                       ' $(BOOST)
-	@echo '  - CVODES                      ' $(CVODES)
-	@echo '  - IDAS                        ' $(IDAS)
-	@echo '  - GTEST                       ' $(GTEST)
-	@echo ''
+	@$(MAKE) print-compiler-flags
 	@echo 'Tests:'
 	@echo ''
 	@echo '  Unit tests are built through make by specifying the executable as the target'
@@ -82,12 +42,13 @@ endif
 	@echo '  To run a single header test, add "-test" to the end of the file name.'
 	@echo '  Example: make stan/math/constants.hpp-test'
 	@echo ''
-	@echo '  - test-math-dependencies : walks through all the header files and indicates'
-	@echo '      when the math dependencies are violated. Dependencies should follow:'
-	@echo '      * rev -> prim'
-	@echo '      * fwd -> prim'
-	@echo '      * mix -> {rev, fwd, prim}'
-	@echo '      * within {prim, rev, fwd, mix}: mat -> arr -> scal'
+	@echo '  - test-math-dependencies : walks through all the header files and indicates'	
+	@echo '      when the math dependencies are violated. Dependencies should follow:'	
+	@echo '      * rev -> prim'	
+	@echo '      * fwd -> prim'	
+	@echo '      * mix -> {rev, fwd, prim}'	
+	@echo '      * within {prim, rev, fwd, mix}: mat -> arr -> scal'	
+	@echo '      * only include {prim, rev, fwd, mix}/meta.hpp from the meta subfolders'	
 	@echo ''
 	@echo '  Cpplint'
 	@echo '  - cpplint       : runs cpplint.py on source files. requires python 2.7.'
@@ -95,6 +56,22 @@ endif
 	@echo '                      CPPLINT = $(CPPLINT)'
 	@echo '                    To set the version of python 2, set the PYTHON2 variable:'
 	@echo '                      PYTHON2 = $(PYTHON2)'
+	@echo ''
+	@echo ' Clang Tidy'
+	@echo ' - clang-tidy     : runs the clang-tidy makefile over the test suite.'
+	@echo '                    Options:'
+	@echo '                     files: (Optional) regex for file names to include in the check'
+	@echo '                      Default runs all the tests in unit'
+	@echo '                     tidy_checks: (Optional) A set of checks'
+	@echo '                      Default runs a hand picked selection of tests'
+	@echo ''
+	@echo '     Example: This runs clang-tidy over all the multiply tests in prim'
+	@echo ''
+	@echo '     make clang-tidy files=*prim*multiply*'
+	@echo ''
+	@echo ' - clang-tidy-fix : same as above but runs with the -fix flag.'
+	@echo '                    For automated fixes, outputs a yaml named'
+	@echo '                    .clang-fixes.yml'
 	@echo ''
 	@echo 'Documentation:'
 	@echo '  Doxygen'
@@ -104,12 +81,12 @@ endif
 	@echo '  - clean         : Basic clean. Leaves doc and compiled libraries intact.'
 	@echo '  - clean-deps    : Removes dependency files for tests. If tests stop building,'
 	@echo '                    run this target.'
-	@echo '  - clean-libraries : Removes binaries built for libraries including CVODES.'
+	@echo '  - clean-libraries : Removes binaries built for libraries including CVODES and the TBB.'
 	@echo '  - clean-all     : Cleans up all of Stan.'
 	@echo ''
 	@echo '--------------------------------------------------------------------------------'
 
-## doxygen
+
 .PHONY: doxygen
 doxygen:
 	mkdir -p doc/api
@@ -126,18 +103,27 @@ clean:
 	$(shell find test -type f -name "*_test.d.*" -exec rm {} +)
 	$(shell find test -type f -name "*_test.xml" -exec rm {} +)
 	$(shell find test -type f -name "*.o" -exec rm {} +)
-	$(shell find test -type f -name "lib*.so" -exec rm {} +)
+	$(RM) $(wildcard $(GTEST)/src/gtest-all.o)
+	@echo '  removing generated test files'
+	$(RM) $(wildcard test/prob/generate_tests$(EXE))
+	$(shell find test/prob -name '*_generated_*_test.cpp' -type f -exec rm {} +)
 
 clean-doxygen:
+	@echo '  removing doxygen'
 	$(RM) -r doc/api
 
 clean-deps:
 	@echo '  removing dependency files'
-	$(shell find . -type f -name '*.d' -exec rm {} +)
-	$(shell find . -type f -name '*.d.*' -exec rm {} +)
-	$(RM) $(shell find stan -type f -name '*.dSYM') $(shell find stan -type f -name '*.d.*')
+	$(shell find stan test lib -type f -name '*.d' -exec rm {} +)
+	$(shell find stan test lib -type f -name '*.d.*' -exec rm {} +)
+	$(shell find stan  -type f -name '*.dSYM' -exec rm {} +)
 
 clean-all: clean clean-doxygen clean-deps clean-libraries
-	@echo '  removing generated test files'
-	$(shell find test/prob -name '*_generated_*_test.cpp' -type f -exec rm {} +)
-	$(RM) $(wildcard test/prob/generate_tests$(EXE))
+
+.PHONY: test-math-dependencies	
+test-math-dependencies:
+	@python runChecks.py
+##
+# Debug target that allows you to print a variable
+##
+print-%  : ; @echo $* = $($*)

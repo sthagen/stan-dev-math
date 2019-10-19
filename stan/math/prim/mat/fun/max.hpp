@@ -5,7 +5,6 @@
 #include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <algorithm>
 #include <limits>
-#include <stdexcept>
 #include <vector>
 
 namespace stan {
@@ -21,11 +20,8 @@ namespace math {
  */
 inline int max(const std::vector<int>& x) {
   check_nonzero_size("max", "int vector", x);
-  int max = x[0];
-  for (size_t i = 1; i < x.size(); ++i)
-    if (x[i] > max)
-      max = x[i];
-  return max;
+  Eigen::Map<const Eigen::Matrix<int, Eigen::Dynamic, 1>> m(&x[0], x.size());
+  return m.maxCoeff();
 }
 
 /**
@@ -37,13 +33,11 @@ inline int max(const std::vector<int>& x) {
  */
 template <typename T>
 inline T max(const std::vector<T>& x) {
-  if (x.size() == 0)
+  if (x.size() == 0) {
     return -std::numeric_limits<T>::infinity();
-  T max = x[0];
-  for (size_t i = 1; i < x.size(); ++i)
-    if (x[i] > max)
-      max = x[i];
-  return max;
+  }
+  Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> m(&x[0], x.size());
+  return m.maxCoeff();
 }
 
 /**
@@ -54,8 +48,9 @@ inline T max(const std::vector<T>& x) {
  */
 template <typename T, int R, int C>
 inline T max(const Eigen::Matrix<T, R, C>& m) {
-  if (m.size() == 0)
+  if (m.size() == 0) {
     return -std::numeric_limits<double>::infinity();
+  }
   return m.maxCoeff();
 }
 

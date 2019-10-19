@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_REV_MAT_FUN_LOG_DETERMINANT_LDLT_HPP
 #define STAN_MATH_REV_MAT_FUN_LOG_DETERMINANT_LDLT_HPP
 
+#include <stan/math/rev/meta.hpp>
 #include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <stan/math/rev/core.hpp>
 #include <stan/math/rev/mat/fun/LDLT_alloc.hpp>
@@ -8,7 +9,7 @@
 
 namespace stan {
 namespace math {
-namespace {
+namespace internal {
 
 /**
  * Returns the log det of the matrix whose LDLT factorization is given
@@ -31,21 +32,15 @@ class log_det_ldlt_vari : public vari {
     // If we start computing Jacobians, this may be a bit inefficient
     invA.setIdentity(alloc_ldlt_->N_, alloc_ldlt_->N_);
     alloc_ldlt_->ldlt_.solveInPlace(invA);
-
-    for (size_t j = 0; j < alloc_ldlt_->N_; j++) {
-      for (size_t i = 0; i < alloc_ldlt_->N_; i++) {
-        alloc_ldlt_->variA_(i, j)->adj_ += adj_ * invA(i, j);
-      }
-    }
+    const_cast<matrix_vi &>(alloc_ldlt_->variA_).adj() += adj_ * invA;
   }
-
   const LDLT_alloc<R, C> *alloc_ldlt_;
 };
-}  // namespace
+}  // namespace internal
 
 template <int R, int C>
 var log_determinant_ldlt(LDLT_factor<var, R, C> &A) {
-  return var(new log_det_ldlt_vari<R, C>(A));
+  return var(new internal::log_det_ldlt_vari<R, C>(A));
 }
 
 }  // namespace math

@@ -22,6 +22,48 @@ TEST(ProbDistributions, Dirichlet) {
   EXPECT_FLOAT_EQ(-43.40045, stan::math::dirichlet_log(theta2, alpha2));
 }
 
+TEST(ProbDistributions, DirichletVectorised) {
+  using stan::math::dirichlet_log;
+  Matrix<double, Dynamic, 1> theta1(3, 1), theta2(3, 1), theta3(3, 1);
+  theta1 << 0.2, 0.3, 0.5;
+  theta2 << 0.1, 0.8, 0.1;
+  theta3 << 0.6, 0.1, 0.3;
+
+  Matrix<double, Dynamic, 1> alpha1(3, 1), alpha2(3, 1), alpha3(3, 1);
+  alpha1 << 1.0, 1.0, 1.0;
+  alpha2 << 6.2, 3.5, 9.1;
+  alpha3 << 2.5, 7.4, 6.1;
+
+  std::vector<Matrix<double, Dynamic, 1>> theta_vec(3);
+  theta_vec[0] = theta1;
+  theta_vec[1] = theta2;
+  theta_vec[2] = theta3;
+
+  std::vector<Matrix<double, Dynamic, 1>> alpha_vec(3);
+  alpha_vec[0] = alpha1;
+  alpha_vec[1] = alpha2;
+  alpha_vec[2] = alpha3;
+
+  Matrix<double, Dynamic, 1> result(3);
+  result[0] = dirichlet_log(theta1, alpha1);
+  result[1] = dirichlet_log(theta2, alpha2);
+  result[2] = dirichlet_log(theta3, alpha3);
+
+  EXPECT_FLOAT_EQ(result.sum(), dirichlet_log(theta_vec, alpha_vec));
+
+  result[0] = dirichlet_log(theta1, alpha1);
+  result[1] = dirichlet_log(theta2, alpha1);
+  result[2] = dirichlet_log(theta3, alpha1);
+
+  EXPECT_FLOAT_EQ(result.sum(), dirichlet_log(theta_vec, alpha1));
+
+  result[0] = dirichlet_log(theta1, alpha1);
+  result[1] = dirichlet_log(theta1, alpha2);
+  result[2] = dirichlet_log(theta1, alpha3);
+
+  EXPECT_FLOAT_EQ(result.sum(), dirichlet_log(theta1, alpha_vec));
+}
+
 TEST(ProbDistributions, DirichletPropto) {
   Matrix<double, Dynamic, 1> theta(3, 1);
   theta << 0.2, 0.3, 0.5;
@@ -91,7 +133,7 @@ double chi_square(std::vector<int> bin, std::vector<double> expect) {
 void test_dirichlet3_1(VectorXd alpha) {
   boost::random::mt19937 rng;
   int N = 10000;
-  int K = boost::math::round(2 * std::pow(N, 0.4));
+  int K = stan::math::round(2 * std::pow(N, 0.4));
 
   // bins 0 vs. 1 + 2
   boost::math::beta_distribution<> dist(alpha(0), alpha(1) + alpha(2));
@@ -117,7 +159,7 @@ void test_dirichlet3_1(VectorXd alpha) {
 void test_dirichlet3_2(VectorXd alpha) {
   boost::random::mt19937 rng;
   int N = 10000;
-  int K = boost::math::round(2 * std::pow(N, 0.4));
+  int K = stan::math::round(2 * std::pow(N, 0.4));
   boost::math::beta_distribution<> dist(alpha(1), alpha(0) + alpha(2));
   boost::math::chi_squared mydist(K - 1);
 

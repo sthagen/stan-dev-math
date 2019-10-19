@@ -1,12 +1,15 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_GRAD_REG_INC_GAMMA_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_GRAD_REG_INC_GAMMA_HPP
 
+#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/scal/err/domain_error.hpp>
 #include <stan/math/prim/scal/fun/gamma_p.hpp>
 #include <stan/math/prim/scal/fun/gamma_q.hpp>
 #include <stan/math/prim/scal/fun/is_inf.hpp>
 #include <stan/math/prim/scal/fun/is_nan.hpp>
-#include <stan/math/prim/scal/fun/square.hpp>
+#include <stan/math/prim/scal/fun/constants.hpp>
+#include <stan/math/prim/scal/fun/multiply_log.hpp>
+#include <stan/math/prim/scal/fun/is_any_nan.hpp>
 #include <cmath>
 #include <limits>
 
@@ -22,7 +25,7 @@ namespace math {
  *
  * @param a   shape parameter, a > 0
  * @param z   location z >= 0
- * @param g   boost::math::tgamma(a) (precomputed value)
+ * @param g   stan::math::tgamma(a) (precomputed value)
  * @param dig boost::math::digamma(a) (precomputed value)
  * @param precision required precision; applies to series expansion only
  * @param max_steps number of steps to take.
@@ -42,26 +45,28 @@ namespace math {
    && + \frac{z^{a-1}e^{-z}}{\Gamma(a)} \sum_{k=0}^N \left(\frac{d}{da}
  (a-1)_k\right) \frac{1}{z^k} \end{array} \f]
  */
-template <typename T>
-T grad_reg_inc_gamma(T a, T z, T g, T dig, double precision = 1e-6,
-                     int max_steps = 1e5) {
-  using std::domain_error;
+template <typename T1, typename T2>
+return_type_t<T1, T2> grad_reg_inc_gamma(T1 a, T2 z, T1 g, T1 dig,
+                                         double precision = 1e-6,
+                                         int max_steps = 1e5) {
   using std::exp;
   using std::fabs;
   using std::log;
+  using TP = return_type_t<T1, T2>;
 
-  if (is_nan(a) || is_nan(z) || is_nan(g) || is_nan(dig))
-    return std::numeric_limits<T>::quiet_NaN();
+  if (is_any_nan(a, z, g, dig)) {
+    return std::numeric_limits<TP>::quiet_NaN();
+  }
 
-  T l = log(z);
+  T2 l = log(z);
   if (z >= a && z >= 8) {
     // asymptotic expansion http://dlmf.nist.gov/8.11#E2
-    T S = 0;
-    T a_minus_one_minus_k = a - 1;
-    T fac = a_minus_one_minus_k;  // falling_factorial(a-1, k)
-    T dfac = 1;                   // d/da[falling_factorial(a-1, k)]
-    T zpow = z;                   // z ** k
-    T delta = dfac / zpow;
+    TP S = 0;
+    T1 a_minus_one_minus_k = a - 1;
+    T1 fac = a_minus_one_minus_k;  // falling_factorial(a-1, k)
+    T1 dfac = 1;                   // d/da[falling_factorial(a-1, k)]
+    T2 zpow = z;                   // z ** k
+    TP delta = dfac / zpow;
 
     for (int k = 1; k < 10; ++k) {
       a_minus_one_minus_k -= 1;
@@ -73,36 +78,35 @@ T grad_reg_inc_gamma(T a, T z, T g, T dig, double precision = 1e-6,
       fac *= a_minus_one_minus_k;
       delta = dfac / zpow;
 
-      if (is_inf(delta))
-        stan::math::domain_error("grad_reg_inc_gamma", "is not converging", "",
-                                 "");
+      if (is_inf(delta)) {
+        domain_error("grad_reg_inc_gamma", "is not converging", "", "");
+      }
     }
 
     return gamma_q(a, z) * (l - dig) + exp(-z + (a - 1) * l) * S / g;
   } else {
     // gradient of series expansion http://dlmf.nist.gov/8.7#E3
-
-    T S = 0;
-    T log_s = 0.0;
+    TP S = 0;
+    TP log_s = 0.0;
     double s_sign = 1.0;
-    T log_z = log(z);
-    T log_delta = log_s - 2 * log(a);
+    T2 log_z = log(z);
+    TP log_delta = log_s - multiply_log(2, a);
     for (int k = 1; k <= max_steps; ++k) {
       S += s_sign >= 0.0 ? exp(log_delta) : -exp(log_delta);
       log_s += log_z - log(k);
       s_sign = -s_sign;
-      log_delta = log_s - 2 * log(k + a);
-      if (is_inf(log_delta))
-        stan::math::domain_error("grad_reg_inc_gamma", "is not converging", "",
-                                 "");
-      if (log_delta <= log(precision))
+      log_delta = log_s - multiply_log(2, k + a);
+      if (is_inf(log_delta)) {
+        domain_error("grad_reg_inc_gamma", "is not converging", "", "");
+      }
+      if (log_delta <= log(precision)) {
         return gamma_p(a, z) * (dig - l) + exp(a * l) * S / g;
+      }
     }
-    stan::math::domain_error("grad_reg_inc_gamma", "k (internal counter)",
-                             max_steps, "exceeded ",
-                             " iterations, gamma function"
-                             " gradient did not converge.");
-    return std::numeric_limits<T>::infinity();
+    domain_error("grad_reg_inc_gamma", "k (internal counter)", max_steps,
+                 "exceeded ",
+                 " iterations, gamma function gradient did not converge.");
+    return INFTY;
   }
 }
 

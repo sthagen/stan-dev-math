@@ -1,18 +1,14 @@
 #ifndef STAN_MATH_REV_MAT_FUN_COV_EXP_QUAD_HPP
 #define STAN_MATH_REV_MAT_FUN_COV_EXP_QUAD_HPP
 
+#include <stan/math/rev/meta.hpp>
 #include <stan/math/rev/core.hpp>
 #include <stan/math/rev/scal/fun/value_of.hpp>
+#include <stan/math/rev/mat/fun/gp_exp_quad_cov.hpp>
 #include <stan/math/prim/mat/fun/Eigen.hpp>
-#include <stan/math/prim/scal/err/check_not_nan.hpp>
-#include <stan/math/prim/scal/err/check_positive.hpp>
-#include <stan/math/prim/scal/fun/square.hpp>
 #include <stan/math/prim/scal/fun/squared_distance.hpp>
 #include <stan/math/prim/scal/fun/exp.hpp>
-#include <stan/math/prim/scal/meta/scalar_type.hpp>
-#include <boost/math/tools/promotion.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits.hpp>
+#include <type_traits>
 #include <vector>
 #include <cmath>
 
@@ -20,17 +16,7 @@ namespace stan {
 namespace math {
 
 /**
- * This is a subclass of the vari class for precomputed
- * gradients of cov_exp_quad.
- *
- * The class stores the double values for the distance
- * matrix, pointers to the varis for the covariance
- * matrix, along with a pointer to the vari for sigma,
- * and the vari for l.
- *
- * @tparam T_x type of std::vector of elements
- * @tparam T_sigma type of sigma
- * @tparam T_l type of length scale
+ * @deprecated use <code>gp_exp_quad_cov_vari</code>
  */
 template <typename T_x, typename T_sigma, typename T_l>
 class cov_exp_quad_vari : public vari {
@@ -47,22 +33,7 @@ class cov_exp_quad_vari : public vari {
   vari** cov_diag_;
 
   /**
-   * Constructor for cov_exp_quad.
-   *
-   * All memory allocated in
-   * ChainableStack's stack_alloc arena.
-   *
-   * It is critical for the efficiency of this object
-   * that the constructor create new varis that aren't
-   * popped onto the var_stack_, but rather are
-   * popped onto the var_nochain_stack_. This is
-   * controlled to the second argument to
-   * vari's constructor.
-   *
-   * @param x std::vector input that can be used in square distance
-   *    Assumes each element of x is the same size
-   * @param sigma standard deviation
-   * @param l length scale
+   * @deprecated use <code>gp_exp_quad_cov_vari</code>
    */
   cov_exp_quad_vari(const std::vector<T_x>& x, const T_sigma& sigma,
                     const T_l& l)
@@ -72,11 +43,14 @@ class cov_exp_quad_vari : public vari {
         l_d_(value_of(l)),
         sigma_d_(value_of(sigma)),
         sigma_sq_d_(sigma_d_ * sigma_d_),
-        dist_(ChainableStack::memalloc_.alloc_array<double>(size_ltri_)),
+        dist_(ChainableStack::instance_->memalloc_.alloc_array<double>(
+            size_ltri_)),
         l_vari_(l.vi_),
         sigma_vari_(sigma.vi_),
-        cov_lower_(ChainableStack::memalloc_.alloc_array<vari*>(size_ltri_)),
-        cov_diag_(ChainableStack::memalloc_.alloc_array<vari*>(size_)) {
+        cov_lower_(ChainableStack::instance_->memalloc_.alloc_array<vari*>(
+            size_ltri_)),
+        cov_diag_(
+            ChainableStack::instance_->memalloc_.alloc_array<vari*>(size_)) {
     double inv_half_sq_l_d = 0.5 / (l_d_ * l_d_);
     size_t pos = 0;
     for (size_t j = 0; j < size_ - 1; ++j) {
@@ -88,8 +62,9 @@ class cov_exp_quad_vari : public vari {
         ++pos;
       }
     }
-    for (size_t i = 0; i < size_; ++i)
+    for (size_t i = 0; i < size_; ++i) {
       cov_diag_[i] = new vari(sigma_sq_d_, false);
+    }
   }
 
   virtual void chain() {
@@ -112,16 +87,7 @@ class cov_exp_quad_vari : public vari {
 };
 
 /**
- * This is a subclass of the vari class for precomputed
- * gradients of cov_exp_quad.
- *
- * The class stores the double values for the distance
- * matrix, pointers to the varis for the covariance
- * matrix, along with a pointer to the vari for sigma,
- * and the vari for l.
- *
- * @tparam T_x type of std::vector of elements
- * @tparam T_l type of length scale
+ * @deprecated use <code>gp_exp_quad_cov_vari</code>
  */
 template <typename T_x, typename T_l>
 class cov_exp_quad_vari<T_x, double, T_l> : public vari {
@@ -137,22 +103,7 @@ class cov_exp_quad_vari<T_x, double, T_l> : public vari {
   vari** cov_diag_;
 
   /**
-   * Constructor for cov_exp_quad.
-   *
-   * All memory allocated in
-   * ChainableStack's stack_alloc arena.
-   *
-   * It is critical for the efficiency of this object
-   * that the constructor create new varis that aren't
-   * popped onto the var_stack_, but rather are
-   * popped onto the var_nochain_stack_. This is
-   * controlled to the second argument to
-   * vari's constructor.
-   *
-   * @param x std::vector input that can be used in square distance
-   *    Assumes each element of x is the same size
-   * @param sigma standard deviation
-   * @param l length scale
+   * @deprecated use <code>gp_exp_quad_cov_vari</code>
    */
   cov_exp_quad_vari(const std::vector<T_x>& x, double sigma, const T_l& l)
       : vari(0.0),
@@ -161,10 +112,13 @@ class cov_exp_quad_vari<T_x, double, T_l> : public vari {
         l_d_(value_of(l)),
         sigma_d_(value_of(sigma)),
         sigma_sq_d_(sigma_d_ * sigma_d_),
-        dist_(ChainableStack::memalloc_.alloc_array<double>(size_ltri_)),
+        dist_(ChainableStack::instance_->memalloc_.alloc_array<double>(
+            size_ltri_)),
         l_vari_(l.vi_),
-        cov_lower_(ChainableStack::memalloc_.alloc_array<vari*>(size_ltri_)),
-        cov_diag_(ChainableStack::memalloc_.alloc_array<vari*>(size_)) {
+        cov_lower_(ChainableStack::instance_->memalloc_.alloc_array<vari*>(
+            size_ltri_)),
+        cov_diag_(
+            ChainableStack::instance_->memalloc_.alloc_array<vari*>(size_)) {
     double inv_half_sq_l_d = 0.5 / (l_d_ * l_d_);
     size_t pos = 0;
     for (size_t j = 0; j < size_ - 1; ++j) {
@@ -176,8 +130,9 @@ class cov_exp_quad_vari<T_x, double, T_l> : public vari {
         ++pos;
       }
     }
-    for (size_t i = 0; i < size_; ++i)
+    for (size_t i = 0; i < size_; ++i) {
       cov_diag_[i] = new vari(sigma_sq_d_, false);
+    }
   }
 
   virtual void chain() {
@@ -192,87 +147,23 @@ class cov_exp_quad_vari<T_x, double, T_l> : public vari {
 };
 
 /**
- * Returns a squared exponential kernel.
- *
- * @param x std::vector input that can be used in square distance
- *    Assumes each element of x is the same size
- * @param sigma standard deviation
- * @param l length scale
- * @return squared distance
- * @throw std::domain_error if sigma <= 0, l <= 0, or
- *   x is nan or infinite
+ * @deprecated use <code>gp_exp_quad_cov_vari</code>
  */
-template <typename T_x>
-inline typename boost::enable_if_c<
-    boost::is_same<typename scalar_type<T_x>::type, double>::value,
-    Eigen::Matrix<var, -1, -1> >::type
-cov_exp_quad(const std::vector<T_x>& x, const var& sigma, const var& l) {
-  check_positive("cov_exp_quad", "sigma", sigma);
-  check_positive("cov_exp_quad", "l", l);
-  size_t x_size = x.size();
-  for (size_t i = 0; i < x_size; ++i)
-    check_not_nan("cov_exp_quad", "x", x[i]);
-
-  Eigen::Matrix<var, -1, -1> cov(x_size, x_size);
-  if (x_size == 0)
-    return cov;
-
-  cov_exp_quad_vari<T_x, var, var>* baseVari
-      = new cov_exp_quad_vari<T_x, var, var>(x, sigma, l);
-
-  size_t pos = 0;
-  for (size_t j = 0; j < x_size - 1; ++j) {
-    for (size_t i = (j + 1); i < x_size; ++i) {
-      cov.coeffRef(i, j).vi_ = baseVari->cov_lower_[pos];
-      cov.coeffRef(j, i).vi_ = cov.coeffRef(i, j).vi_;
-      ++pos;
-    }
-    cov.coeffRef(j, j).vi_ = baseVari->cov_diag_[j];
-  }
-  cov.coeffRef(x_size - 1, x_size - 1).vi_ = baseVari->cov_diag_[x_size - 1];
-  return cov;
+template <typename T_x,
+          typename = require_arithmetic_t<typename scalar_type<T_x>::type>>
+inline Eigen::Matrix<var, -1, -1> cov_exp_quad(const std::vector<T_x>& x,
+                                               const var& sigma, const var& l) {
+  return gp_exp_quad_cov(x, sigma, l);
 }
 
 /**
- * Returns a squared exponential kernel.
- *
- * @param x std::vector input that can be used in square distance
- *    Assumes each element of x is the same size
- * @param sigma standard deviation
- * @param l length scale
- * @return squared distance
- * @throw std::domain_error if sigma <= 0, l <= 0, or
- *   x is nan or infinite
+ * @deprecated use <code>gp_exp_quad_cov_vari</code>
  */
-template <typename T_x>
-inline typename boost::enable_if_c<
-    boost::is_same<typename scalar_type<T_x>::type, double>::value,
-    Eigen::Matrix<var, -1, -1> >::type
-cov_exp_quad(const std::vector<T_x>& x, double sigma, const var& l) {
-  check_positive("cov_exp_quad", "marginal variance", sigma);
-  check_positive("cov_exp_quad", "length-scale", l);
-  size_t x_size = x.size();
-  for (size_t i = 0; i < x_size; ++i)
-    check_not_nan("cov_exp_quad", "x", x[i]);
-
-  Eigen::Matrix<var, -1, -1> cov(x_size, x_size);
-  if (x_size == 0)
-    return cov;
-
-  cov_exp_quad_vari<T_x, double, var>* baseVari
-      = new cov_exp_quad_vari<T_x, double, var>(x, sigma, l);
-
-  size_t pos = 0;
-  for (size_t j = 0; j < x_size - 1; ++j) {
-    for (size_t i = (j + 1); i < x_size; ++i) {
-      cov.coeffRef(i, j).vi_ = baseVari->cov_lower_[pos];
-      cov.coeffRef(j, i).vi_ = cov.coeffRef(i, j).vi_;
-      ++pos;
-    }
-    cov.coeffRef(j, j).vi_ = baseVari->cov_diag_[j];
-  }
-  cov.coeffRef(x_size - 1, x_size - 1).vi_ = baseVari->cov_diag_[x_size - 1];
-  return cov;
+template <typename T_x,
+          typename = require_arithmetic_t<typename scalar_type<T_x>::type>>
+inline Eigen::Matrix<var, -1, -1> cov_exp_quad(const std::vector<T_x>& x,
+                                               double sigma, const var& l) {
+  return gp_exp_quad_cov(x, sigma, l);
 }
 
 }  // namespace math

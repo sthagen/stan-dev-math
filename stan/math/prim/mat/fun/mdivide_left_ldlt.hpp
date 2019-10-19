@@ -6,7 +6,7 @@
 #include <stan/math/prim/mat/fun/LDLT_factor.hpp>
 #include <stan/math/prim/mat/err/check_multiplicable.hpp>
 #include <stan/math/prim/mat/fun/promote_common.hpp>
-#include <boost/type_traits/is_same.hpp>
+#include <type_traits>
 
 namespace stan {
 namespace math {
@@ -20,10 +20,8 @@ namespace math {
  */
 
 template <int R1, int C1, int R2, int C2, typename T1, typename T2>
-inline Eigen::Matrix<typename boost::math::tools::promote_args<T1, T2>::type,
-                     R1, C2>
-mdivide_left_ldlt(const LDLT_factor<T1, R1, C1> &A,
-                  const Eigen::Matrix<T2, R2, C2> &b) {
+inline Eigen::Matrix<return_type_t<T1, T2>, R1, C2> mdivide_left_ldlt(
+    const LDLT_factor<T1, R1, C1> &A, const Eigen::Matrix<T2, R2, C2> &b) {
   check_multiplicable("mdivide_left_ldlt", "A", A, "b", b);
 
   return A.solve(

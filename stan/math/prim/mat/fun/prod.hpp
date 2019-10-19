@@ -15,12 +15,11 @@ namespace math {
  */
 template <typename T>
 inline T prod(const std::vector<T>& v) {
-  if (v.size() == 0)
+  if (v.size() == 0) {
     return 1;
-  T product = v[0];
-  for (size_t i = 1; i < v.size(); ++i)
-    product *= v[i];
-  return product;
+  }
+  Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> m(&v[0], v.size());
+  return m.prod();
 }
 
 /**
@@ -31,8 +30,9 @@ inline T prod(const std::vector<T>& v) {
  */
 template <typename T, int R, int C>
 inline T prod(const Eigen::Matrix<T, R, C>& v) {
-  if (v.size() == 0)
+  if (v.size() == 0) {
     return 1.0;
+  }
   return v.prod();
 }
 

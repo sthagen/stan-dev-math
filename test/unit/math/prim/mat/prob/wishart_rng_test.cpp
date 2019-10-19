@@ -1,6 +1,7 @@
 #include <stan/math/prim/mat.hpp>
 #include <test/unit/math/prim/mat/util.hpp>
 #include <boost/random/mersenne_twister.hpp>
+#include <boost/math/distributions/chi_squared.hpp>
 #include <gtest/gtest.h>
 #include <stdexcept>
 #include <vector>
@@ -55,9 +56,9 @@ TEST(ProbDistributionsWishart, marginalTwoChiSquareGoodnessFitTest) {
   MatrixXd a(sigma.rows(), sigma.rows());
   for (int count = 0; count < N; ++count) {
     a = wishart_rng(5.0, sigma, rng);
-    avg += log(determinant(a)) / N;
-    count++;
+    avg += log(determinant(a));
   }
+  avg /= N;
   double chi = (expect - avg) * (expect - avg) / expect;
   chi_squared mydist(1);
   EXPECT_TRUE(chi < quantile(complement(mydist, 1e-6)));

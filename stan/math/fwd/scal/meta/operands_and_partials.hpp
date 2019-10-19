@@ -11,7 +11,7 @@ namespace internal {
 template <typename Dx>
 class ops_partials_edge<Dx, fvar<Dx> > {
  public:
-  typedef fvar<Dx> Op;
+  using Op = fvar<Dx>;
   Dx partial_;
   broadcast_array<Dx> partials_;
   explicit ops_partials_edge(const Op& op)
@@ -46,6 +46,13 @@ class ops_partials_edge<Dx, fvar<Dx> > {
  * This is the specialization for when the return type is fvar,
  * which should be for forward mode and all higher-order cases.
  *
+ * NB: since ops_partials_edge.partials_ and ops_partials_edge.partials_vec
+ * are sometimes represented internally as a broadcast_array, we need to take
+ * care with assignments to them. Indeed, we can assign any right hand side
+ * which allows for indexing to a broadcast_array. The resulting behaviour is
+ * that the entry for the first index is what gets assigned. The most common
+ * use-case should be where the rhs is some container of length 1.
+ *
  * @tparam Op1 type of the first operand
  * @tparam Op2 type of the second operand
  * @tparam Op3 type of the third operand
@@ -64,7 +71,7 @@ class operands_and_partials<Op1, Op2, Op3, Op4, Op5, fvar<Dx> > {
   internal::ops_partials_edge<Dx, Op3> edge3_;
   internal::ops_partials_edge<Dx, Op4> edge4_;
   internal::ops_partials_edge<Dx, Op5> edge5_;
-  typedef fvar<Dx> T_return_type;
+  using T_return_type = fvar<Dx>;
   explicit operands_and_partials(const Op1& o1) : edge1_(o1) {}
   operands_and_partials(const Op1& o1, const Op2& o2)
       : edge1_(o1), edge2_(o2) {}

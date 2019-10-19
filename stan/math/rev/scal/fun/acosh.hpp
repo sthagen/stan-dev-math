@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_REV_SCAL_FUN_ACOSH_HPP
 #define STAN_MATH_REV_SCAL_FUN_ACOSH_HPP
 
+#include <stan/math/rev/meta.hpp>
 #include <stan/math/prim/scal/fun/acosh.hpp>
 #include <stan/math/rev/core.hpp>
 #include <cmath>
@@ -8,7 +9,7 @@
 namespace stan {
 namespace math {
 
-namespace {
+namespace internal {
 class acosh_vari : public op_v_vari {
  public:
   acosh_vari(double val, vari* avi) : op_v_vari(val, avi) {}
@@ -16,7 +17,7 @@ class acosh_vari : public op_v_vari {
     avi_->adj_ += adj_ / std::sqrt(avi_->val_ * avi_->val_ - 1.0);
   }
 };
-}  // namespace
+}  // namespace internal
 
 /**
  * The inverse hyperbolic cosine function for variables (C99).
@@ -58,7 +59,7 @@ class acosh_vari : public op_v_vari {
  * @return Inverse hyperbolic cosine of the variable.
  */
 inline var acosh(const var& a) {
-  return var(new acosh_vari(stan::math::acosh(a.val()), a.vi_));
+  return var(new internal::acosh_vari(stan::math::acosh(a.val()), a.vi_));
 }
 
 }  // namespace math

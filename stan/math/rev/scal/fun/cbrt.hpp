@@ -1,19 +1,20 @@
 #ifndef STAN_MATH_REV_SCAL_FUN_CBRT_HPP
 #define STAN_MATH_REV_SCAL_FUN_CBRT_HPP
 
+#include <stan/math/rev/meta.hpp>
 #include <stan/math/prim/scal/fun/cbrt.hpp>
 #include <stan/math/rev/core.hpp>
 
 namespace stan {
 namespace math {
 
-namespace {
+namespace internal {
 class cbrt_vari : public op_v_vari {
  public:
   explicit cbrt_vari(vari* avi) : op_v_vari(cbrt(avi->val_), avi) {}
   void chain() { avi_->adj_ += adj_ / (3.0 * val_ * val_); }
 };
-}  // namespace
+}  // namespace internal
 
 /**
  * Returns the cube root of the specified variable (C99).
@@ -41,7 +42,7 @@ class cbrt_vari : public op_v_vari {
  * @param a Specified variable.
  * @return Cube root of the variable.
  */
-inline var cbrt(const var& a) { return var(new cbrt_vari(a.vi_)); }
+inline var cbrt(const var& a) { return var(new internal::cbrt_vari(a.vi_)); }
 
 }  // namespace math
 }  // namespace stan

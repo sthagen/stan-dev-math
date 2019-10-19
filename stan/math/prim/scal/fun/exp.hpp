@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_EXP_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_EXP_HPP
 
+#include <stan/math/prim/meta.hpp>
 #include <cmath>
 
 namespace stan {
@@ -13,7 +14,7 @@ namespace math {
  * @param[in] x Argument.
  * @return Natural exponential of argument.
  */
-inline double exp(int x) { return std::exp(static_cast<double>(x)); }
+inline double exp(int x) { return std::exp(x); }
 
 }  // namespace math
 }  // namespace stan

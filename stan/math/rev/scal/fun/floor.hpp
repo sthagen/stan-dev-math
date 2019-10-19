@@ -1,25 +1,26 @@
 #ifndef STAN_MATH_REV_SCAL_FUN_FLOOR_HPP
 #define STAN_MATH_REV_SCAL_FUN_FLOOR_HPP
 
+#include <stan/math/rev/meta.hpp>
 #include <stan/math/rev/core.hpp>
 #include <stan/math/prim/scal/fun/is_nan.hpp>
-#include <stan/math/prim/scal/meta/likely.hpp>
 #include <cmath>
 #include <limits>
 
 namespace stan {
 namespace math {
 
-namespace {
+namespace internal {
 class floor_vari : public op_v_vari {
  public:
   explicit floor_vari(vari* avi) : op_v_vari(std::floor(avi->val_), avi) {}
   void chain() {
-    if (unlikely(is_nan(avi_->val_)))
+    if (unlikely(is_nan(avi_->val_))) {
       avi_->adj_ = std::numeric_limits<double>::quiet_NaN();
+    }
   }
 };
-}  // namespace
+}  // namespace internal
 
 /**
  * Return the floor of the specified variable (cmath).
@@ -55,7 +56,7 @@ class floor_vari : public op_v_vari {
  * @param a Input variable.
  * @return Floor of the variable.
  */
-inline var floor(const var& a) { return var(new floor_vari(a.vi_)); }
+inline var floor(const var& a) { return var(new internal::floor_vari(a.vi_)); }
 
 }  // namespace math
 }  // namespace stan

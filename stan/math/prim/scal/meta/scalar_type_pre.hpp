@@ -1,3 +1,4 @@
+// This is not used anywhere. Should it be deleted?
 #ifndef STAN_MATH_PRIM_SCAL_META_SCALAR_TYPE_PRE_HPP
 #define STAN_MATH_PRIM_SCAL_META_SCALAR_TYPE_PRE_HPP
 
@@ -5,20 +6,20 @@
 #include <stan/math/prim/scal/meta/value_type.hpp>
 
 namespace stan {
-namespace {
+namespace internal {
 template <bool is_vec, typename T, typename T_container>
 struct scalar_type_helper_pre {
-  typedef T_container type;
+  using type = T_container;
 };
 
 template <typename T, typename T_container>
 struct scalar_type_helper_pre<true, T, T_container> {
-  typedef typename scalar_type_helper_pre<
-      is_vector<typename stan::math::value_type<T>::type>::value,
-      typename stan::math::value_type<T>::type,
-      typename stan::math::value_type<T_container>::type>::type type;
+  using type = typename scalar_type_helper_pre<
+      is_vector<typename value_type<T>::type>::value,
+      typename value_type<T>::type,
+      typename value_type<T_container>::type>::type;
 };
-}  // namespace
+}  // namespace internal
 
 /**
  * Metaprogram structure to determine the type of first container of
@@ -28,9 +29,9 @@ struct scalar_type_helper_pre<true, T, T_container> {
  */
 template <typename T>
 struct scalar_type_pre {
-  typedef typename scalar_type_helper_pre<
-      is_vector<typename stan::math::value_type<T>::type>::value,
-      typename stan::math::value_type<T>::type, T>::type type;
+  using type = typename internal::scalar_type_helper_pre<
+      is_vector<typename value_type<T>::type>::value,
+      typename value_type<T>::type, T>::type;
 };
 
 }  // namespace stan

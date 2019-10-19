@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_PRIM_MAT_FUNCTOR_MAP_RECT_HPP
 #define STAN_MATH_PRIM_MAT_FUNCTOR_MAP_RECT_HPP
 
+#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/arr/err/check_matching_sizes.hpp>
 #include <stan/math/prim/mat/fun/dims.hpp>
 #include <stan/math/prim/mat/fun/typedefs.hpp>
@@ -8,9 +9,9 @@
 #define STAN_REGISTER_MAP_RECT(CALLID, FUNCTOR)
 
 #ifdef STAN_MPI
-#error "MPI not yet supported"
+#include <stan/math/prim/mat/functor/map_rect_mpi.hpp>
 #else
-#include <stan/math/prim/mat/functor/map_rect_serial.hpp>
+#include <stan/math/prim/mat/functor/map_rect_concurrent.hpp>
 #endif
 
 #include <vector>
@@ -36,9 +37,24 @@ namespace math {
  * ... ]'.
  *
  * The function is implemented with serial execution and with
- * parallelism (TODO) using MPI. The MPI version is only available if
- * STAN_MPI is defined. For the MPI version to work this function
- * has these special non-standard conventions:
+ * parallelism using threading or MPI (TODO). The threading version is
+ * used if the compiler flag STAN_THREADS is set during compilation
+ * while the MPI version is only available if STAN_MPI is defined. The
+ * MPI parallelism takes precedence over serial or threading execution
+ * of the function.
+ *
+ * For the threaded parallelism the N jobs are chunked into T blocks
+ * which are executed asynchronously using the async C++11
+ * facility. This ensure that at most T threads are used, but the
+ * actual number of threads is controlled by the implementation of
+ * async provided by the compiler. Note that nested calls of map_rect
+ * will lead to a multiplicative increase in the number of job chunks
+ * generated. The number of threads T is controlled at runtime via the
+ * STAN_NUM_threads environment variable, see the get_num_threads
+ * function for details.
+ *
+ * For the MPI version to work this function has these special
+ * non-standard conventions:
  *
  * - The call_id template parameter is considered as a label for the
  *   functor F and data combination. Since MPI communication is
@@ -72,7 +88,7 @@ namespace math {
  * with signature
  *
  * template <typename T1, typename T2>
- * Eigen::Matrix<typename stan::return_type<T1, T2>::type, Eigen::Dynamic, 1>
+ * Eigen::Matrix<return_type_t<T1, T2>, Eigen::Dynamic, 1>
  * operator()(const Eigen::Matrix<T1, Eigen::Dynamic, 1>& eta,
  *            const Eigen::Matrix<T2, Eigen::Dynamic, 1>& theta,
  *            const std::vector<double>& x_r, const std::vector<int>& x_i,
@@ -103,18 +119,16 @@ namespace math {
 
 template <int call_id, typename F, typename T_shared_param,
           typename T_job_param>
-Eigen::Matrix<typename stan::return_type<T_shared_param, T_job_param>::type,
-              Eigen::Dynamic, 1>
+Eigen::Matrix<return_type_t<T_shared_param, T_job_param>, Eigen::Dynamic, 1>
 map_rect(const Eigen::Matrix<T_shared_param, Eigen::Dynamic, 1>& shared_params,
          const std::vector<Eigen::Matrix<T_job_param, Eigen::Dynamic, 1>>&
              job_params,
          const std::vector<std::vector<double>>& x_r,
-         const std::vector<std::vector<int>>& x_i, std::ostream* msgs = 0) {
+         const std::vector<std::vector<int>>& x_i,
+         std::ostream* msgs = nullptr) {
   static const char* function = "map_rect";
-  typedef Eigen::Matrix<
-      typename stan::return_type<T_shared_param, T_job_param>::type,
-      Eigen::Dynamic, 1>
-      return_t;
+  using return_t = Eigen::Matrix<return_type_t<T_shared_param, T_job_param>,
+                                 Eigen::Dynamic, 1>;
 
   check_matching_sizes(function, "job parameters", job_params, "real data",
                        x_r);
@@ -149,13 +163,15 @@ map_rect(const Eigen::Matrix<T_shared_param, Eigen::Dynamic, 1>& shared_params,
                      size_x_i);
   }
 
-  if (job_params_dims[0] == 0)
+  if (job_params_dims[0] == 0) {
     return return_t();
+  }
 
 #ifdef STAN_MPI
-#error "MPI not yet supported"
+  return internal::map_rect_mpi<call_id, F, T_shared_param, T_job_param>(
+      shared_params, job_params, x_r, x_i, msgs);
 #else
-  return internal::map_rect_serial<call_id, F, T_shared_param, T_job_param>(
+  return internal::map_rect_concurrent<call_id, F, T_shared_param, T_job_param>(
       shared_params, job_params, x_r, x_i, msgs);
 #endif
 }

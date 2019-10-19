@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_REV_SCAL_FUN_ERFC_HPP
 #define STAN_MATH_REV_SCAL_FUN_ERFC_HPP
 
+#include <stan/math/rev/meta.hpp>
 #include <stan/math/prim/scal/fun/constants.hpp>
 #include <stan/math/prim/scal/fun/erfc.hpp>
 #include <stan/math/rev/core.hpp>
@@ -9,7 +10,7 @@
 namespace stan {
 namespace math {
 
-namespace {
+namespace internal {
 class erfc_vari : public op_v_vari {
  public:
   explicit erfc_vari(vari* avi) : op_v_vari(erfc(avi->val_), avi) {}
@@ -18,7 +19,7 @@ class erfc_vari : public op_v_vari {
         += adj_ * NEG_TWO_OVER_SQRT_PI * std::exp(-avi_->val_ * avi_->val_);
   }
 };
-}  // namespace
+}  // namespace internal
 
 /**
  * The complementary error function for variables (C99).
@@ -55,7 +56,7 @@ class erfc_vari : public op_v_vari {
  * @param a The variable.
  * @return Complementary error function applied to the variable.
  */
-inline var erfc(const var& a) { return var(new erfc_vari(a.vi_)); }
+inline var erfc(const var& a) { return var(new internal::erfc_vari(a.vi_)); }
 
 }  // namespace math
 }  // namespace stan

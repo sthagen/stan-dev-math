@@ -21,15 +21,14 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> cholesky_corr_constrain(
   check_size_match("cholesky_corr_constrain", "y.size()", y.size(),
                    "k_choose_2", k_choose_2);
   Matrix<T, Dynamic, 1> z(k_choose_2);
-  for (int i = 0; i < k_choose_2; ++i)
+  for (int i = 0; i < k_choose_2; ++i) {
     z(i) = corr_constrain(y(i));
+  }
   Matrix<T, Dynamic, Dynamic> x(K, K);
-  if (K == 0)
+  if (K == 0) {
     return x;
-  T zero(0);
-  for (int j = 1; j < K; ++j)
-    for (int i = 0; i < j; ++i)
-      x(i, j) = zero;
+  }
+  x.setZero();
   x(0, 0) = 1;
   int k = 0;
   for (int i = 1; i < K; ++i) {
@@ -55,15 +54,14 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> cholesky_corr_constrain(
   check_size_match("cholesky_corr_constrain", "y.size()", y.size(),
                    "k_choose_2", k_choose_2);
   Matrix<T, Dynamic, 1> z(k_choose_2);
-  for (int i = 0; i < k_choose_2; ++i)
+  for (int i = 0; i < k_choose_2; ++i) {
     z(i) = corr_constrain(y(i), lp);
+  }
   Matrix<T, Dynamic, Dynamic> x(K, K);
-  if (K == 0)
+  if (K == 0) {
     return x;
-  T zero(0);
-  for (int j = 1; j < K; ++j)
-    for (int i = 0; i < j; ++i)
-      x(i, j) = zero;
+  }
+  x.setZero();
   x(0, 0) = 1;
   int k = 0;
   for (int i = 1; i < K; ++i) {

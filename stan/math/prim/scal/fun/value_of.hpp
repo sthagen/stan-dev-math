@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_PRIM_SCAL_FUN_VALUE_OF_HPP
 #define STAN_MATH_PRIM_SCAL_FUN_VALUE_OF_HPP
 
+#include <stan/math/prim/meta.hpp>
 namespace stan {
 namespace math {
 
@@ -39,6 +40,19 @@ template <>
 inline double value_of<double>(double x) {
   return x;
 }
+
+/**
+ * Return the specified argument.
+ *
+ * <p>See <code>value_of(T)</code> for a polymorphic
+ * implementation using static casts.
+ *
+ * <p>This inline pass-through no-op should be compiled away.
+ *
+ * @param x value
+ * @return input value
+ */
+inline int value_of(int x) { return x; }
 
 }  // namespace math
 }  // namespace stan

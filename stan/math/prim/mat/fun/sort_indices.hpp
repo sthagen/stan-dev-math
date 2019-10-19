@@ -1,23 +1,22 @@
 #ifndef STAN_MATH_PRIM_MAT_FUN_SORT_INDICES_HPP
 #define STAN_MATH_PRIM_MAT_FUN_SORT_INDICES_HPP
 
+#include <stan/math/prim/meta.hpp>
 #include <stan/math/prim/mat/fun/Eigen.hpp>
-#include <stan/math/prim/mat/meta/index_type.hpp>
-#include <stan/math/prim/arr/meta/index_type.hpp>
 #include <algorithm>
 #include <vector>
 
 namespace stan {
 namespace math {
 
-/**
+/*
  * A comparator that works for any container type that has the
  * brackets operator.
  *
  * @tparam ascending true if sorting in ascending order
  * @tparam C container type
  */
-namespace {
+namespace internal {
 template <bool ascending, typename C>
 class index_comparator {
   const C& xs_;
@@ -27,7 +26,7 @@ class index_comparator {
    * Construct an index comparator holding a reference
    * to the specified container.
    *
-   * @patam xs Container
+   * @param xs Container
    */
   explicit index_comparator(const C& xs) : xs_(xs) {}
 
@@ -40,12 +39,15 @@ class index_comparator {
    * @param j Index of second value for comparison
    */
   bool operator()(int i, int j) const {
-    if (ascending)
+    if (ascending) {
       return xs_[i - 1] < xs_[j - 1];
-    else
+    } else {
       return xs_[i - 1] > xs_[j - 1];
+    }
   }
 };
+
+}  // namespace internal
 
 /**
  * Return an integer array of indices of the specified container
@@ -59,18 +61,17 @@ class index_comparator {
  */
 template <bool ascending, typename C>
 std::vector<int> sort_indices(const C& xs) {
-  typedef typename index_type<C>::type idx_t;
+  using idx_t = typename index_type<C>::type;
   idx_t size = xs.size();
   std::vector<int> idxs;
   idxs.resize(size);
-  for (idx_t i = 0; i < size; ++i)
+  for (idx_t i = 0; i < size; ++i) {
     idxs[i] = i + 1;
-  index_comparator<ascending, C> comparator(xs);
+  }
+  internal::index_comparator<ascending, C> comparator(xs);
   std::sort(idxs.begin(), idxs.end(), comparator);
   return idxs;
 }
-
-}  // namespace
 
 }  // namespace math
 }  // namespace stan

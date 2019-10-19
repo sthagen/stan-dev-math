@@ -1,6 +1,7 @@
 #ifndef STAN_MATH_REV_SCAL_FUN_OWENS_T_HPP
 #define STAN_MATH_REV_SCAL_FUN_OWENS_T_HPP
 
+#include <stan/math/rev/meta.hpp>
 #include <stan/math/rev/core.hpp>
 #include <stan/math/prim/scal/fun/constants.hpp>
 #include <stan/math/prim/scal/fun/erf.hpp>
@@ -11,7 +12,7 @@
 namespace stan {
 namespace math {
 
-namespace {
+namespace internal {
 class owens_t_vv_vari : public op_vv_vari {
  public:
   owens_t_vv_vari(vari* avi, vari* bvi)
@@ -48,7 +49,7 @@ class owens_t_dv_vari : public op_dv_vari {
                   / (one_p_bvi_sq * 2.0 * pi());
   }
 };
-}  // namespace
+}  // namespace internal
 
 /**
  * The Owen's T function of h and a.
@@ -61,7 +62,7 @@ class owens_t_dv_vari : public op_dv_vari {
  * @return The Owen's T function.
  */
 inline var owens_t(const var& h, const var& a) {
-  return var(new owens_t_vv_vari(h.vi_, a.vi_));
+  return var(new internal::owens_t_vv_vari(h.vi_, a.vi_));
 }
 
 /**
@@ -75,7 +76,7 @@ inline var owens_t(const var& h, const var& a) {
  * @return The Owen's T function.
  */
 inline var owens_t(const var& h, double a) {
-  return var(new owens_t_vd_vari(h.vi_, a));
+  return var(new internal::owens_t_vd_vari(h.vi_, a));
 }
 
 /**
@@ -89,7 +90,7 @@ inline var owens_t(const var& h, double a) {
  * @return The Owen's T function.
  */
 inline var owens_t(double h, const var& a) {
-  return var(new owens_t_dv_vari(h, a.vi_));
+  return var(new internal::owens_t_dv_vari(h, a.vi_));
 }
 
 }  // namespace math

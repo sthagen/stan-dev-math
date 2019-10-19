@@ -1,5 +1,5 @@
 #include <stan/math/prim/scal/meta/broadcast_array.hpp>
-#include <Eigen/Dense>
+#include <stan/math/prim/mat/fun/Eigen.hpp>
 #include <stdexcept>
 
 #ifndef STAN_MATH_PRIM_MAT_META_BROADCAST_ARRAY_HPP
@@ -23,7 +23,7 @@ class empty_broadcast_array<ViewElt, Eigen::Matrix<OpElt, R, C> > {
   /**
    * Not implemented so cannot be called.
    */
-  void operator=(Eigen::Matrix<ViewElt, R, C> /*A*/);
+  void operator=(const Eigen::Matrix<ViewElt, R, C>& /*A*/);
   /**
    * Not implemented so cannot be called.
    */
