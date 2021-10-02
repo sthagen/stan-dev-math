@@ -9,7 +9,7 @@ namespace stan {
 namespace math {
 
 /**
- * Prints the auto-dif variable stack. This function
+ * Prints the autodiff variable stack. This function
  * is used for debugging purposes.
  *
  * Only works if all members of stack are vari* as it
@@ -20,14 +20,6 @@ namespace math {
 inline void print_stack(std::ostream& o) {
   o << "STACK, size=" << ChainableStack::instance_->var_stack_.size()
     << std::endl;
-  // TODO(carpenter): this shouldn't need to be cast any more
-  for (size_t i = 0; i < ChainableStack::instance_->var_stack_.size(); ++i) {
-    o << i << "  " << ChainableStack::instance_->var_stack_[i] << "  "
-      << (static_cast<vari*>(ChainableStack::instance_->var_stack_[i]))->val_
-      << " : "
-      << (static_cast<vari*>(ChainableStack::instance_->var_stack_[i]))->adj_
-      << std::endl;
-  }
 }
 
 }  // namespace math

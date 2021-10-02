@@ -12,12 +12,12 @@ namespace opencl_kernels {
 // \cond
 static const std::string categorical_logit_glm_kernel_code = STRINGIFY(
     // \endcond
-    /**
+    /** \ingroup opencl_kernels
      * GPU implementation of Generalized Linear Model (GLM)
      * with categorical distribution and logit (softmax) link function.
      *
      * Must be run with at least N threads and local size equal to LOCAL_SIZE_.
-     * @param[out] logp_global partially summed log probabiltiy (1 value per
+     * @param[out] logp_global partially summed log probability (1 value per
      * work group)
      * @param[out] exp_lin_global exponentiation of sum of alpha and matrix
      * product of x and beta
@@ -115,7 +115,7 @@ static const std::string categorical_logit_glm_kernel_code = STRINGIFY(
               barrier(CLK_LOCAL_MEM_FENCE);
             }
             if (lid == 0) {
-              alpha_derivative[i * ngroups + wg_id] = local_storage[0];
+              alpha_derivative[i + wg_id * N_classes] = local_storage[0];
             }
             barrier(CLK_LOCAL_MEM_FENCE);
           }
@@ -143,7 +143,7 @@ static const std::string categorical_logit_glm_kernel_code = STRINGIFY(
 );
 // \endcond
 
-/**
+/** \ingroup opencl_kernels
  * See the docs for \link kernels/categorical_logit_glm_lpmf.hpp
  * categorical_logit_glm() \endlink
  */
@@ -157,7 +157,7 @@ const kernel_cl<out_buffer, out_buffer, out_buffer, out_buffer, out_buffer,
 static const std::string categorical_logit_glm_beta_derivative_kernel_code
     = STRINGIFY(
         // \endcond
-        /**
+        /** \ingroup opencl_kernels
          * Calculates derivative wrt beta.
          *
          * Must be run with global size of local_size*N_attributes.
@@ -201,7 +201,7 @@ static const std::string categorical_logit_glm_beta_derivative_kernel_code
     );  // NOLINT
 // \endcond
 
-/**
+/** \ingroup opencl_kernels
  * See the docs for \link kernels/categorical_logit_glm_lpmf.hpp
  * categorical_logit_glm_beta_derivative() \endlink
  */

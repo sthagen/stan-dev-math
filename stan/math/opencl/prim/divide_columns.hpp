@@ -1,18 +1,18 @@
 #ifndef STAN_MATH_OPENCL_PRIM_DIVIDE_COLUMNS_HPP
 #define STAN_MATH_OPENCL_PRIM_DIVIDE_COLUMNS_HPP
 #ifdef STAN_OPENCL
+
+#include <stan/math/prim/meta.hpp>
+#include <stan/math/prim/err.hpp>
 #include <stan/math/opencl/matrix_cl.hpp>
 #include <stan/math/opencl/kernels/divide_columns.hpp>
-#include <stan/math/opencl/err/check_vector.hpp>
-#include <stan/math/prim/scal/err/check_size_match.hpp>
-#include <stan/math/prim/meta.hpp>
-
-#include <cl.hpp>
+#include <stan/math/opencl/err.hpp>
+#include <CL/opencl.hpp>
 
 namespace stan {
 namespace math {
 
-/**
+/** \ingroup opencl
  * Divides each column of a matrix by a vector
  *
  * @tparam T1 Type of first matrix
@@ -27,7 +27,7 @@ namespace math {
  *
  */
 template <typename T1, typename T2, typename = require_all_arithmetic_t<T1, T2>>
-inline void divide_columns(const matrix_cl<T1>& A, const matrix_cl<T2>& B) {
+inline void divide_columns(matrix_cl<T1>& A, const matrix_cl<T2>& B) {
   if (A.size() == 0 || B.size() == 0) {
     return;
   }
@@ -41,7 +41,7 @@ inline void divide_columns(const matrix_cl<T1>& A, const matrix_cl<T2>& B) {
   }
 }
 
-/**
+/** \ingroup opencl
  * Divides each column of a matrix by a scalar
  *
  * @tparam T1 Type of first matrix
@@ -53,15 +53,8 @@ inline void divide_columns(const matrix_cl<T1>& A, const matrix_cl<T2>& B) {
  *
  */
 template <typename T1, typename T2, typename = require_all_arithmetic_t<T1, T2>>
-inline void divide_columns(const matrix_cl<T1>& A, const T2& divisor) {
-  if (A.size() == 0) {
-    return;
-  }
-  try {
-    opencl_kernels::divide_columns_scalar(cl::NDRange(A.size()), A, divisor);
-  } catch (const cl::Error& e) {
-    check_opencl_error("divide_columns", e);
-  }
+inline void divide_columns(matrix_cl<T1>& A, const T2& divisor) {
+  A = elt_divide(A, divisor);
 }
 
 }  // namespace math

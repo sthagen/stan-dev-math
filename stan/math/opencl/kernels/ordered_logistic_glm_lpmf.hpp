@@ -13,14 +13,14 @@ namespace opencl_kernels {
 // \cond
 static const char* ordered_logistic_glm_kernel_code = STRINGIFY(
     // \endcond
-    /**
+    /** \ingroup opencl_kernels
      * GPU implementation of ordinal regression Generalized Linear Model (GLM).
      *
      * Must be run with at least N_instances threads and local size equal to
      * LOCAL_SIZE_.
      * @param[out] location_sum partially summed location (1 value per work
      * group)
-     * @param[out] logp_global partially summed log probabiltiy (1 value per
+     * @param[out] logp_global partially summed log probability (1 value per
      * work group)
      * @param[out] location_derivative derivative wrt location
      * @param[out] cuts_derivative partially summed derivative wrt cuts (1
@@ -133,7 +133,7 @@ static const char* ordered_logistic_glm_kernel_code = STRINGIFY(
             barrier(CLK_LOCAL_MEM_FENCE);
           }
           if (lid == 0) {
-            cuts_derivative[wg_id + i * ngroups] = local_storage[0];
+            cuts_derivative[(N_classes - 1) * wg_id + i] = local_storage[0];
           }
           barrier(CLK_LOCAL_MEM_FENCE);
         }
@@ -173,7 +173,7 @@ static const char* ordered_logistic_glm_kernel_code = STRINGIFY(
 );
 // \endcond
 
-/**
+/** \ingroup opencl_kernels
  * See the docs for \link kernels/ordered_logistic_glm_lpmf.hpp
  * ordered_logistic_glm() \endlink
  */

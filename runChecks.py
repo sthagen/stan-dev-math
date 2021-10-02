@@ -10,6 +10,7 @@ import os
 import sys
 import re
 import glob
+from collections import defaultdict
 
 winsfx = ".exe"
 testsfx = "_test.cpp"
@@ -29,6 +30,38 @@ def files_in_folder(folder):
             files.append(f)
     return files
 
+def check_non_unique_test_names():
+    test_files = files_in_folder("test/unit/")
+    tests = {}
+    duplicates = defaultdict(list)
+    for filepath in test_files:
+        if os.path.isfile(filepath) and filepath.endswith(testsfx):
+            with open(filepath) as file:
+                test_file_content = file.read()
+                # look for TEST() and TEST_F()
+                matches = re.findall(r"TEST(?:_F)?\((.*?)\)", test_file_content, re.DOTALL)
+                for x in matches:
+                    if not ("#" in x):
+                        # strips for test names written in two lines
+                        x_stripped = x.replace("\n", "").replace(" ", "").replace(",",", ")
+                        if x_stripped in tests:                        
+                            duplicates[x_stripped].append(filepath)
+                        else:
+                            tests[x_stripped] = filepath
+    errors = []
+    if len(duplicates)>0:
+        duplicates_error_msg = ""
+        for x in duplicates:
+            duplicates_error_msg += "(" + x + ") in files:\n"
+            # add the first found file first
+            duplicates_error_msg += "\t" + tests[x] + "\n"
+            for y in duplicates[x]:
+                duplicates_error_msg += "\t" + y + "\n"
+        errors.append(
+            "Tests or test fixtures with non-unique names found in test/unit:\n\n" +
+            duplicates_error_msg
+        )
+    return errors
 
 def grep_patterns(type, folder, patterns_and_messages, exclude_filters=[]):
     """Checks the files in the provided folder for matches
@@ -97,7 +130,7 @@ def check_non_test_files_in_test():
     # if the file is a .cpp file that doesnt end with _test.cpp
     errors = []
     errors.extend(
-        x + ":\n\t A .cpp file without the " + testsfx + " suffix in test/unit/math/"
+        x + ":\n\t A .cpp file without the " + testsfx + " suffix found in test/unit/math/"
         for x in all_cpp
         if os.path.splitext(x)[1] == ".cpp" and x[-len(testsfx) :] != testsfx
     )
@@ -143,35 +176,7 @@ def main():
         },
     ]
     errors.extend(grep_patterns("rev", "stan/math/rev", rev_checks))
-
-    # Check for files inside stan/math/*/scal that contain stan/math/*/arr or stan/math/*/mat
-    scal_checks = [
-        {
-            "pattern": "<stan/math/.*/arr/",
-            "message": "File includes an array header file.",
-        },
-        {"pattern": "<vector>", "message": "File includes an std::vector header."},
-        {"pattern": "std::vector", "message": "File uses std::vector."},
-        {
-            "pattern": "<stan/math/.*/mat/",
-            "message": "File includes a matrix header file.",
-        },
-        {"pattern": "<Eigen", "message": "File includes an Eigen header."},
-        {"pattern": "Eigen::", "message": "File uses Eigen."},
-    ]
-    errors.extend(grep_patterns("scal", "stan/math/*/scal", scal_checks))
-
-    # Check for files inside stan/math/*/arr that contain stan/math/*/mat or Eigen
-    arr_checks = [
-        {
-            "pattern": "<stan/math/.*/mat/",
-            "message": "File includes an matrix header file.",
-        },
-        {"pattern": "<Eigen", "message": "File includes an Eigen header."},
-        {"pattern": "Eigen::", "message": "File uses Eigen."},
-    ]
-    errors.extend(grep_patterns("arr", "stan/math/*/arr", arr_checks))
-
+    
     # Check to make sure we use C++14 constructs in stan/math
     cpp14_checks = [
         {
@@ -225,16 +230,6 @@ def main():
     ]
     errors.extend(grep_patterns("C++14", "stan/math", cpp14_checks))
 
-    # Check for includes of stan/math/*/meta/*.hpp inside stan/math, excluding meta.hpp files and the /meta subfolder
-    meta_checks = [
-        {
-            "pattern": "<stan/math/.*/meta/.*hpp",
-            "message": "File includes */meta/*.hpp header file. Should include meta.hpp",
-        }
-    ]
-    meta_exclude = ["stan/math/*/*/meta", "stan/math/*/meta.hpp"]
-    errors.extend(grep_patterns("meta", "stan/math", meta_checks, meta_exclude))
-
     #  Check that we do not use non-reentrant safe functions from std
     thread_safe_checks = [
         {
@@ -247,6 +242,8 @@ def main():
     )
 
     errors.extend(check_non_test_files_in_test())
+
+    errors.extend(check_non_unique_test_names())
 
     if errors:
         for e in errors:

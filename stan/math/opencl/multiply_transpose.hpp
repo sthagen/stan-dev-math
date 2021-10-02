@@ -1,18 +1,17 @@
 #ifndef STAN_MATH_OPENCL_MULTIPLY_TRANSPOSE_HPP
 #define STAN_MATH_OPENCL_MULTIPLY_TRANSPOSE_HPP
 #ifdef STAN_OPENCL
+
 #include <stan/math/opencl/matrix_cl.hpp>
 #include <stan/math/opencl/kernels/multiply_transpose.hpp>
-#include <stan/math/opencl/err/check_opencl.hpp>
-#include <stan/math/opencl/err/check_square.hpp>
-#include <stan/math/opencl/sub_block.hpp>
+#include <stan/math/opencl/err.hpp>
 
-#include <stan/math/prim/mat/fun/Eigen.hpp>
+#include <stan/math/prim/fun/Eigen.hpp>
 #include <stan/math/prim/meta.hpp>
 
 namespace stan {
 namespace math {
-/**
+/** \ingroup opencl
  * Computes the product of a square OpenCL matrix with its transpose.
  *
  * Computes the matrix multiplication C = A x A^T
@@ -32,13 +31,12 @@ inline matrix_cl<T> multiply_transpose(const matrix_cl<T>& A) {
     return temp;
   }
   // padding the matrices so the dimensions are divisible with local
-  // improves performance becasuse we can omit if statements in the
+  // improves performance because we can omit if statements in the
   // multiply kernel
-  int local = opencl_kernels::multiply_transpose.make_functor.get_opts().at(
-      "THREAD_BLOCK_SIZE");
+  int local
+      = opencl_kernels::multiply_transpose.get_option("THREAD_BLOCK_SIZE");
   int Mpad = ((A.rows() + local - 1) / local) * local;
-  int wpt = opencl_kernels::multiply_transpose.make_functor.get_opts().at(
-      "WORK_PER_THREAD");
+  int wpt = opencl_kernels::multiply_transpose.get_option("WORK_PER_THREAD");
   try {
     opencl_kernels::multiply_transpose(cl::NDRange(Mpad, Mpad / wpt),
                                        cl::NDRange(local, local / wpt), A, temp,

@@ -12,7 +12,7 @@ namespace opencl_kernels {
 // \cond
 static const std::string inv_lower_tri_multiply_kernel_code = STRINGIFY(
     // \endcond
-    /**
+    /** \ingroup opencl_kernels
      * Calculates B = C * A. C is an inverse matrix and A is lower triangular.
      *
      * This kernel is used in the final iteration of the batched lower
@@ -26,7 +26,7 @@ static const std::string inv_lower_tri_multiply_kernel_code = STRINGIFY(
      * upper left lower and A3 is the original lower triangulars lower left
      * rectangular. This kernel takes the output from
      * <code>neg_rect_lower_tri_multiply</code> and applies
-     * the submatrix multiplcation to get the final output for C3.
+     * the submatrix multiplication to get the final output for C3.
      * ![Inverse Calculation](https://goo.gl/6jBjEG)
      *
      * Graphically, this kernel calculates the C2 * A3.
@@ -123,7 +123,7 @@ static const std::string inv_lower_tri_multiply_kernel_code = STRINGIFY(
 );
 // \endcond
 
-/**
+/** \ingroup opencl_kernels
  * See the docs for \link kernels/inv_lower_tri_multiply.hpp add() \endlink
  */
 const kernel_cl<in_buffer, out_buffer, int, int> inv_lower_tri_multiply(

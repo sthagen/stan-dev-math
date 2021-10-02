@@ -13,13 +13,13 @@ namespace opencl_kernels {
 static const char* neg_binomial_2_log_glm_kernel_code = STRINGIFY(
     // \endcond
 
-    /**
+    /** \ingroup opencl_kernels
      * GPU implementation of Generalized Linear Model (GLM)
      * with Negative-Binomial-2 distribution and log link function.
      *
      * Must be run with at least N threads and local size equal to LOCAL_SIZE_.
-     * @param[out] logp_global partially summed log probabilty (1 value per work
-     * group)
+     * @param[out] logp_global partially summed log probability (1 value per
+     * work group)
      * @param[out] theta_derivative_global intermediate variable used in the
      * model
      * @param[out] theta_derivative_sum partially summed theta_derivative_global
@@ -32,6 +32,8 @@ static const char* neg_binomial_2_log_glm_kernel_code = STRINGIFY(
      * @param[in] phi_global (vector of) precision parameter(s)
      * @param N number of cases
      * @param M number of attributes
+     * @param is_y_vector 0 or 1 - whether y is a vector (alternatively
+     * it is a scalar)
      * @param is_alpha_vector 0 or 1 - whether alpha is a vector (alternatively
      * it is a scalar)
      * @param is_phi_vector 0 or 1 - whether phi is a vector (alternatively it
@@ -51,8 +53,6 @@ static const char* neg_binomial_2_log_glm_kernel_code = STRINGIFY(
      * needs to be computed
      * @param need_logp4 interpreted as boolean - whether fourth part
      * logp_global needs to be computed
-     * @param need_logp5 interpreted as boolean - whether fifth part logp_global
-     * needs to be computed
      */
     __kernel void neg_binomial_2_log_glm(
         __global double* logp_global, __global double* theta_derivative_global,
@@ -60,12 +60,12 @@ static const char* neg_binomial_2_log_glm_kernel_code = STRINGIFY(
         __global double* phi_derivative_global, const __global int* y_global,
         const __global double* x, const __global double* alpha,
         const __global double* beta, const __global double* phi_global,
-        const int N, const int M, const int is_alpha_vector,
-        const int is_phi_vector, const int need_theta_derivative,
-        const int need_theta_derivative_sum, const int need_phi_derivative,
-        const int need_phi_derivative_sum, const int need_logp1,
-        const int need_logp2, const int need_logp3, const int need_logp4,
-        const int need_logp5) {
+        const int N, const int M, const int is_y_vector,
+        const int is_alpha_vector, const int is_phi_vector,
+        const int need_theta_derivative, const int need_theta_derivative_sum,
+        const int need_phi_derivative, const int need_phi_derivative_sum,
+        const int need_logp1, const int need_logp2, const int need_logp3,
+        const int need_logp4) {
       const int gid = get_global_id(0);
       const int lid = get_local_id(0);
       const int lsize = get_local_size(0);
@@ -84,7 +84,7 @@ static const char* neg_binomial_2_log_glm_kernel_code = STRINGIFY(
           theta += x[j + gid] * beta[i];
         }
         double phi = phi_global[gid * is_phi_vector];
-        double y = y_global[gid];
+        double y = y_global[gid * is_y_vector];
         if (!isfinite(theta) || y < 0 || !isfinite(phi)) {
           logp = NAN;
         }
@@ -106,13 +106,11 @@ static const char* neg_binomial_2_log_glm_kernel_code = STRINGIFY(
             logp += phi * log(phi);
           }
         }
+        logp -= y_plus_phi * logsumexp_theta_logphi;
         if (need_logp3) {
-          logp -= y_plus_phi * logsumexp_theta_logphi;
-        }
-        if (need_logp4) {
           logp += y * theta;
         }
-        if (need_logp5) {
+        if (need_logp4) {
           logp += lgamma(y_plus_phi);
         }
         double theta_exp = exp(theta);
@@ -190,8 +188,9 @@ static const char* neg_binomial_2_log_glm_kernel_code = STRINGIFY(
 );
 // \endcond
 
-/**
- * See the docs for \link kernels/subtract.hpp subtract() \endlink
+/** \ingroup opencl_kernels
+ * See the docs for \link kernels/neg_binomial_2_log_glm_lpmf.hpp
+ * neg_binomial_2_log_glm_lpmf() \endlink
  */
 const kernel_cl<out_buffer, out_buffer, out_buffer, out_buffer, in_buffer,
                 in_buffer, in_buffer, in_buffer, in_buffer, int, int, int, int,

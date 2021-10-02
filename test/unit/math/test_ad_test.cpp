@@ -70,7 +70,7 @@ TEST(test_ad, mismatch) {
 
 // OVERLOAD THAT FAILS DUE TO MISMATCHED EXCEPTION CONDITIONS
 
-// double overload does not match template behavior for exceptionsalue
+// double overload does not match template behavior for exceptions
 template <typename T>
 T f_misthrow(const T& x) {
   return -2 * x;
@@ -182,8 +182,7 @@ struct bar_fun {
     return x * y;
   }
   template <typename T1, typename T2>
-  typename boost::math::tools::promote_args<T1, T2>::type operator()(
-      const T1& x, const T2& y) const {
+  stan::promote_args_t<T1, T2> operator()(const T1& x, const T2& y) const {
     return x * y;
   }
 };
@@ -231,6 +230,9 @@ int baz_int = 0;
 int baz_double = 0;
 int baz_var = 0;
 int baz_fvar = 0;
+int baz_complex = 0;
+int baz_complex_var = 0;
+int baz_complex_fvar = 0;
 
 double baz(int x) {
   ++baz_int;
@@ -244,9 +246,23 @@ stan::math::var baz(const stan::math::var& x) {
   ++baz_var;
   return x / 2.0;
 }
+std::complex<double> baz(std::complex<double> x) {
+  ++baz_complex;
+  return x / 2.0;
+}
+std::complex<stan::math::var> baz(const std::complex<stan::math::var>& x) {
+  ++baz_complex_var;
+  return x / 2.0;
+}
 template <typename T>
 stan::math::fvar<T> baz(const stan::math::fvar<T>& x) {
   ++baz_fvar;
+  return x / 2.0;
+}
+template <typename T>
+std::complex<stan::math::fvar<T>> baz(
+    const std::complex<stan::math::fvar<T>>& x) {
+  ++baz_complex_fvar;
   return x / 2.0;
 }
 
@@ -290,7 +306,8 @@ TEST(testAd, integerGetsPassedVectorized) {
   baz_double = 0;
   baz_var = 0;
   baz_fvar = 0;
-  stan::test::expect_common_unary_vectorized(h);
+  stan::test::expect_common_unary_vectorized<stan::test::PromoteToComplex::Yes>(
+      h);
   EXPECT_GT(baz_int, 0);  // int version gets called
   EXPECT_GT(baz_double, 0);
   EXPECT_GT(baz_var, 0);
@@ -305,4 +322,192 @@ TEST(testAd, integerGetsPassedVectorized) {
   EXPECT_GT(baz_double, 0);
   EXPECT_GT(baz_var, 0);
   EXPECT_GT(baz_fvar, 0);
+}
+
+struct ternary_fun {
+  // must be static because operator() must be const
+  static int calls_int_;
+  static int calls_int1_;
+  static int calls_int2_;
+  static int calls_int3_;
+  static int calls_int12_;
+  static int calls_int13_;
+  static int calls_int23_;
+  static int calls_int123_;
+
+  static void reset() {
+    ternary_fun::calls_int_ = 0;
+    ternary_fun::calls_int1_ = 0;
+    ternary_fun::calls_int2_ = 0;
+    ternary_fun::calls_int3_ = 0;
+    ternary_fun::calls_int12_ = 0;
+    ternary_fun::calls_int13_ = 0;
+    ternary_fun::calls_int23_ = 0;
+    ternary_fun::calls_int123_ = 0;
+  }
+
+  double operator()(int x1, int x2, int x3) const {
+    ++ternary_fun::calls_int123_;
+    return this->operator()(static_cast<double>(x1), static_cast<double>(x2),
+                            static_cast<double>(x3));
+  }
+
+  template <typename T1>
+  T1 operator()(const T1& x1, int x2, int x3) const {
+    ++ternary_fun::calls_int23_;
+    return this->operator()(x1, static_cast<double>(x2),
+                            static_cast<double>(x3));
+  }
+
+  template <typename T2>
+  T2 operator()(int x1, const T2& x2, int x3) const {
+    ++ternary_fun::calls_int13_;
+    return this->operator()(static_cast<double>(x1), x2,
+                            static_cast<double>(x3));
+  }
+
+  template <typename T3>
+  T3 operator()(int x1, int x2, const T3& x3) const {
+    ++ternary_fun::calls_int12_;
+    return this->operator()(static_cast<double>(x1), static_cast<double>(x2),
+                            x3);
+  }
+
+  template <typename T1, typename T2>
+  stan::promote_args_t<T1, T2> operator()(const T1& x1, const T2& x2,
+                                          int x3) const {
+    ++ternary_fun::calls_int3_;
+    return this->operator()(x1, x2, static_cast<double>(x3));
+  }
+
+  template <typename T1, typename T3>
+  stan::promote_args_t<T1, T3> operator()(const T1& x1, int x2,
+                                          const T3& x3) const {
+    ++ternary_fun::calls_int2_;
+    return this->operator()(x1, static_cast<double>(x2), x3);
+  }
+
+  template <typename T2, typename T3>
+  stan::promote_args_t<T2, T3> operator()(int x1, const T2& x2,
+                                          const T3& x3) const {
+    ++ternary_fun::calls_int1_;
+    return this->operator()(static_cast<double>(x1), x2, x3);
+  }
+
+  template <typename T1, typename T2, typename T3>
+  stan::promote_args_t<T1, T2, T3> operator()(const T1& x1, const T2& x2,
+                                              const T3& x3) const {
+    ++ternary_fun::calls_int_;
+    return x1 * x2 + x2 * x3 + x1 * x3;
+  }
+};
+
+// need these or it won't link
+int ternary_fun::calls_int_ = 0;
+int ternary_fun::calls_int1_ = 0;
+int ternary_fun::calls_int2_ = 0;
+int ternary_fun::calls_int3_ = 0;
+int ternary_fun::calls_int12_ = 0;
+int ternary_fun::calls_int13_ = 0;
+int ternary_fun::calls_int23_ = 0;
+int ternary_fun::calls_int123_ = 0;
+
+TEST(testUnitMath, testAdTernaryIntPassed) {
+  ternary_fun f;
+
+  // { }
+  ternary_fun::reset();
+  stan::test::expect_ad(f, 1.0, 2.0, 3.0);
+  EXPECT_LT(0, ternary_fun::calls_int_);
+  EXPECT_EQ(0, ternary_fun::calls_int1_);
+  EXPECT_EQ(0, ternary_fun::calls_int2_);
+  EXPECT_EQ(0, ternary_fun::calls_int3_);
+  EXPECT_EQ(0, ternary_fun::calls_int12_);
+  EXPECT_EQ(0, ternary_fun::calls_int13_);
+  EXPECT_EQ(0, ternary_fun::calls_int23_);
+  EXPECT_EQ(0, ternary_fun::calls_int123_);
+
+  // 1
+  ternary_fun::reset();
+  stan::test::expect_ad(f, 1, 2.0, 3.0);
+  EXPECT_LT(0, ternary_fun::calls_int_);
+  EXPECT_LT(0, ternary_fun::calls_int1_);
+  EXPECT_EQ(0, ternary_fun::calls_int2_);
+  EXPECT_EQ(0, ternary_fun::calls_int3_);
+  EXPECT_EQ(0, ternary_fun::calls_int12_);
+  EXPECT_EQ(0, ternary_fun::calls_int13_);
+  EXPECT_EQ(0, ternary_fun::calls_int23_);
+  EXPECT_EQ(0, ternary_fun::calls_int123_);
+
+  // 2
+  ternary_fun::reset();
+  stan::test::expect_ad(f, 1.0, 2, 3.0);
+  EXPECT_LT(0, ternary_fun::calls_int_);
+  EXPECT_EQ(0, ternary_fun::calls_int1_);
+  EXPECT_LT(0, ternary_fun::calls_int2_);
+  EXPECT_EQ(0, ternary_fun::calls_int3_);
+  EXPECT_EQ(0, ternary_fun::calls_int12_);
+  EXPECT_EQ(0, ternary_fun::calls_int13_);
+  EXPECT_EQ(0, ternary_fun::calls_int23_);
+  EXPECT_EQ(0, ternary_fun::calls_int123_);
+
+  // 3
+  ternary_fun::reset();
+  stan::test::expect_ad(f, 1.0, 2.0, 3);
+  EXPECT_LT(0, ternary_fun::calls_int_);
+  EXPECT_EQ(0, ternary_fun::calls_int1_);
+  EXPECT_EQ(0, ternary_fun::calls_int2_);
+  EXPECT_LT(0, ternary_fun::calls_int3_);
+  EXPECT_EQ(0, ternary_fun::calls_int12_);
+  EXPECT_EQ(0, ternary_fun::calls_int13_);
+  EXPECT_EQ(0, ternary_fun::calls_int23_);
+  EXPECT_EQ(0, ternary_fun::calls_int123_);
+
+  // 1, 2
+  ternary_fun::reset();
+  stan::test::expect_ad(f, 1, 2, 3.0);
+  EXPECT_LT(0, ternary_fun::calls_int_);
+  EXPECT_LT(0, ternary_fun::calls_int1_);
+  EXPECT_LT(0, ternary_fun::calls_int2_);
+  EXPECT_EQ(0, ternary_fun::calls_int3_);
+  EXPECT_LT(0, ternary_fun::calls_int12_);
+  EXPECT_EQ(0, ternary_fun::calls_int13_);
+  EXPECT_EQ(0, ternary_fun::calls_int23_);
+  EXPECT_EQ(0, ternary_fun::calls_int123_);
+
+  // 1, 3
+  ternary_fun::reset();
+  stan::test::expect_ad(f, 1, 2.0, 3);
+  EXPECT_LT(0, ternary_fun::calls_int_);
+  EXPECT_LT(0, ternary_fun::calls_int1_);
+  EXPECT_EQ(0, ternary_fun::calls_int2_);
+  EXPECT_LT(0, ternary_fun::calls_int3_);
+  EXPECT_EQ(0, ternary_fun::calls_int12_);
+  EXPECT_LT(0, ternary_fun::calls_int13_);
+  EXPECT_EQ(0, ternary_fun::calls_int23_);
+  EXPECT_EQ(0, ternary_fun::calls_int123_);
+
+  // 2, 3
+  ternary_fun::reset();
+  stan::test::expect_ad(f, 1.0, 2, 3);
+  EXPECT_LT(0, ternary_fun::calls_int_);
+  EXPECT_EQ(0, ternary_fun::calls_int1_);
+  EXPECT_LT(0, ternary_fun::calls_int2_);
+  EXPECT_LT(0, ternary_fun::calls_int3_);
+  EXPECT_EQ(0, ternary_fun::calls_int12_);
+  EXPECT_EQ(0, ternary_fun::calls_int13_);
+  EXPECT_LT(0, ternary_fun::calls_int23_);
+  EXPECT_EQ(0, ternary_fun::calls_int123_);
+
+  // 1, 2, 3
+  ternary_fun::reset();
+  stan::test::expect_ad(f, 1, 2, 3);
+  EXPECT_LT(0, ternary_fun::calls_int_);
+  EXPECT_LT(0, ternary_fun::calls_int1_);
+  EXPECT_LT(0, ternary_fun::calls_int2_);
+  EXPECT_LT(0, ternary_fun::calls_int3_);
+  EXPECT_LT(0, ternary_fun::calls_int12_);
+  EXPECT_LT(0, ternary_fun::calls_int13_);
+  EXPECT_LT(0, ternary_fun::calls_int23_);
+  EXPECT_LT(0, ternary_fun::calls_int123_);
 }

@@ -42,13 +42,11 @@ help:
 	@echo '  To run a single header test, add "-test" to the end of the file name.'
 	@echo '  Example: make stan/math/constants.hpp-test'
 	@echo ''
-	@echo '  - test-math-dependencies : walks through all the header files and indicates'	
-	@echo '      when the math dependencies are violated. Dependencies should follow:'	
-	@echo '      * rev -> prim'	
-	@echo '      * fwd -> prim'	
-	@echo '      * mix -> {rev, fwd, prim}'	
-	@echo '      * within {prim, rev, fwd, mix}: mat -> arr -> scal'	
-	@echo '      * only include {prim, rev, fwd, mix}/meta.hpp from the meta subfolders'	
+	@echo '  - test-math-dependencies : walks through all the header files and indicates'
+	@echo '      when the math dependencies are violated. Dependencies should follow:'
+	@echo '      * rev -> prim'
+	@echo '      * fwd -> prim'
+	@echo '      * mix -> {rev, fwd, prim}'
 	@echo ''
 	@echo '  Cpplint'
 	@echo '  - cpplint       : runs cpplint.py on source files. requires python 2.7.'
@@ -97,16 +95,23 @@ doxygen:
 ##
 .PHONY: clean clean-doxygen clean-deps clean-all
 clean:
-	@echo '  removing test executables'
-	$(shell find test -type f -name "*_test$(EXE)" -exec rm {} +)
-	$(shell find test -type f -name "*_test.d" -exec rm {} +)
-	$(shell find test -type f -name "*_test.d.*" -exec rm {} +)
-	$(shell find test -type f -name "*_test.xml" -exec rm {} +)
-	$(shell find test -type f -name "*.o" -exec rm {} +)
-	$(RM) $(wildcard $(GTEST)/src/gtest-all.o)
 	@echo '  removing generated test files'
-	$(RM) $(wildcard test/prob/generate_tests$(EXE))
-	$(shell find test/prob -name '*_generated_*_test.cpp' -type f -exec rm {} +)
+	@$(RM) $(wildcard test/prob/generate_tests$(EXE))
+	@$(RM) $(call findfiles,test/prob,*_generated_v_test.cpp)
+	@$(RM) $(call findfiles,test/prob,*_generated_vv_test.cpp)
+	@$(RM) $(call findfiles,test/prob,*_generated_fd_test.cpp)
+	@$(RM) $(call findfiles,test/prob,*_generated_fv_test.cpp)
+	@$(RM) $(call findfiles,test/prob,*_generated_ffd_test.cpp)
+	@$(RM) $(call findfiles,test/prob,*_generated_ffv_test.cpp)
+	@$(RM) $(call findfiles,test/prob,*_generated_*_test.cpp)
+	@echo '  removing test executables'
+	@$(RM) $(call findfiles,test,*_test$(EXE))
+	@$(RM) $(call findfiles,test,*_test.d)
+	@$(RM) $(call findfiles,test,*_test.d.*)
+	@$(RM) $(call findfiles,test,*_test.xml)
+	@$(RM) $(call findfiles,test,*.o)
+	@$(RM) $(wildcard $(GTEST)/src/gtest-all.o)
+	@$(RM) $(TEST_STANC)
 
 clean-doxygen:
 	@echo '  removing doxygen'
@@ -114,15 +119,19 @@ clean-doxygen:
 
 clean-deps:
 	@echo '  removing dependency files'
-	$(shell find stan test lib -type f -name '*.d' -exec rm {} +)
-	$(shell find stan test lib -type f -name '*.d.*' -exec rm {} +)
-	$(shell find stan  -type f -name '*.dSYM' -exec rm {} +)
+	@$(RM) $(call findfiles,stan,*.d)
+	@$(RM) $(call findfiles,test,*.d)
+	@$(RM) $(call findfiles,lib,*.d)
+	@$(RM) $(call findfiles,stan,*.d.*)
+	@$(RM) $(call findfiles,test,*.d.*)
+	@$(RM) $(call findfiles,lib,*.d.*)
+	@$(RM) $(call findfiles,stan,*.dSYM)
 
 clean-all: clean clean-doxygen clean-deps clean-libraries
 
-.PHONY: test-math-dependencies	
+.PHONY: test-math-dependencies
 test-math-dependencies:
-	@python runChecks.py
+	@./runChecks.py
 ##
 # Debug target that allows you to print a variable
 ##

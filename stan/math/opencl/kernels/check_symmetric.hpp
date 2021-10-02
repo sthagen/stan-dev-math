@@ -12,14 +12,14 @@ namespace opencl_kernels {
 // \cond
 static const std::string is_symmetric_kernel_code = STRINGIFY(
     // \endcond
-    /**
+    /** \ingroup opencl_kernels
      * Check if the <code>matrix_cl</code> is symmetric
      *
      * @param[in] A The matrix to check.
      * @param rows The number of rows in matrix A.
      * @param cols The number of columns in matrix A.
      * @param[out] flag the flag to be written to if any diagonal is zero.
-     * @param tolerance The numerical tolerance to check wheter
+     * @param tolerance The numerical tolerance to check whether
      *   two values are equal
      * @note Code is a <code>const char*</code> held in
      * <code>is_symmetric_kernel_code.</code>
@@ -42,7 +42,7 @@ static const std::string is_symmetric_kernel_code = STRINGIFY(
 );
 // \endcond
 
-/**
+/** \ingroup opencl_kernels
  * See the docs for \link kernels/check_symmetric.hpp check_symmetric() \endlink
  */
 const kernel_cl<in_buffer, out_buffer, int, int, const double> check_symmetric(
