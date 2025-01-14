@@ -43,7 +43,7 @@ return_type_t<T_y> std_normal_lpdf(const T_y& y) {
     return 0.0;
   }
 
-  T_partials_return y_val = as_value_column_vector_or_scalar(y_ref);
+  const auto& y_val = as_value_column_vector_or_scalar(y_ref);
   T_partials_return logp = -dot_self(y_val) / 2.0;
   auto ops_partials = make_partials_propagator(y_ref);
 
